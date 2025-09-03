@@ -65,7 +65,7 @@ npm run prisma:seed
 npm run dev
 ```
 
-Server will be available at http://localhost:3001
+Server will be available at http://localhost:7778
 
 ### 5. Access Database UI
 
@@ -88,7 +88,7 @@ Create a `.env` file in the root directory:
 DATABASE_URL="postgresql://cosmicuser:cosmic123!@localhost:5432/cosmicboard?schema=public"
 
 # Server
-PORT=3001
+PORT=7778
 NODE_ENV=development
 
 # JWT

@@ -15,6 +15,9 @@ router.get('/', async (req: Request, res: Response) => {
     
     const tasks = await prisma.task.findMany({
       where: { projectId: projectId as string },
+      include: {
+        project: true
+      },
       orderBy: { createdAt: 'desc' }
     });
     
@@ -25,7 +28,8 @@ router.get('/', async (req: Request, res: Response) => {
       title: task.content, // Using content field as title
       contentHtml: (task.metadata as any)?.contentHtml || '',
       tags: (task.metadata as any)?.tags || [],
-      dueDate: (task.metadata as any)?.dueDate || null
+      dueDate: (task.metadata as any)?.dueDate || null,
+      projectId: task.project // Include the populated project object
     }));
     
     res.json(transformedTasks);
@@ -55,6 +59,9 @@ router.post('/', async (req: Request, res: Response) => {
           dueDate: dueDate ? new Date(dueDate).toISOString() : null,
           tags: tags || []
         }
+      },
+      include: {
+        project: true
       }
     });
     
@@ -65,13 +72,79 @@ router.post('/', async (req: Request, res: Response) => {
       title: task.content,
       contentHtml: (task.metadata as any)?.contentHtml || '',
       tags: (task.metadata as any)?.tags || [],
-      dueDate: (task.metadata as any)?.dueDate || null
+      dueDate: (task.metadata as any)?.dueDate || null,
+      projectId: task.project // Include the populated project object
     };
     
     res.status(201).json(transformedTask);
   } catch (error) {
     console.error('POST /api/tasks error:', error);
     res.status(500).json({ error: 'Failed to create task' });
+  }
+});
+
+// GET /api/current-priority
+router.get('/current-priority', async (req: Request, res: Response) => {
+  try {
+    // Priority order: URGENT > HIGH > MEDIUM > LOW
+    const priorityOrder = {
+      URGENT: 4,
+      HIGH: 3,
+      MEDIUM: 2,
+      LOW: 1
+    };
+    
+    // Find all active tasks
+    const tasks = await prisma.task.findMany({
+      where: { status: 'ACTIVE' },
+      include: {
+        project: true
+      }
+    });
+    
+    if (tasks.length === 0) {
+      return res.json(null);
+    }
+    
+    // Sort tasks by priority, then by dueDate, then by createdAt
+    tasks.sort((a, b) => {
+      // First, sort by priority
+      const priorityA = priorityOrder[a.priority as keyof typeof priorityOrder] || 2;
+      const priorityB = priorityOrder[b.priority as keyof typeof priorityOrder] || 2;
+      if (priorityA !== priorityB) {
+        return priorityB - priorityA; // Higher priority first
+      }
+      
+      // Then sort by dueDate
+      const dueDateA = (a.metadata as any)?.dueDate;
+      const dueDateB = (b.metadata as any)?.dueDate;
+      
+      if (dueDateA && dueDateB) {
+        return new Date(dueDateA).getTime() - new Date(dueDateB).getTime();
+      }
+      if (dueDateA && !dueDateB) return -1;
+      if (!dueDateA && dueDateB) return 1;
+      
+      // Finally, sort by createdAt
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    });
+    
+    // Transform the top priority task
+    const topTask = tasks[0];
+    const transformedTask = {
+      ...topTask,
+      _id: topTask.id,
+      title: topTask.content,
+      contentHtml: (topTask.metadata as any)?.contentHtml || '',
+      tags: (topTask.metadata as any)?.tags || [],
+      dueDate: (topTask.metadata as any)?.dueDate || null,
+      projectId: topTask.project // Include the populated project object
+    };
+    
+    res.json(transformedTask);
+  } catch (error) {
+    console.error('GET /api/current-priority error:', error);
+    res.status(500).json({ error: 'Failed to fetch current priority' });
   }
 });
 
@@ -116,7 +189,10 @@ router.get('/:id', async (req: Request, res: Response) => {
     const { id } = req.params;
     
     const task = await prisma.task.findUnique({
-      where: { id }
+      where: { id },
+      include: {
+        project: true
+      }
     });
     
     if (!task) {
@@ -129,7 +205,8 @@ router.get('/:id', async (req: Request, res: Response) => {
       title: task.content,
       contentHtml: (task.metadata as any)?.contentHtml || '',
       tags: (task.metadata as any)?.tags || [],
-      dueDate: (task.metadata as any)?.dueDate || null
+      dueDate: (task.metadata as any)?.dueDate || null,
+      projectId: task.project // Include the populated project object
     };
     
     res.json(transformedTask);
@@ -165,7 +242,10 @@ router.put('/:id', async (req: Request, res: Response) => {
     
     const task = await prisma.task.update({
       where: { id },
-      data: updateData
+      data: updateData,
+      include: {
+        project: true
+      }
     });
     
     const transformedTask = {
@@ -174,7 +254,8 @@ router.put('/:id', async (req: Request, res: Response) => {
       title: task.content,
       contentHtml: metadata.contentHtml || '',
       tags: metadata.tags || [],
-      dueDate: metadata.dueDate || null
+      dueDate: metadata.dueDate || null,
+      projectId: task.project // Include the populated project object
     };
     
     res.json(transformedTask);
@@ -194,10 +275,13 @@ router.post('/:id/complete', async (req: Request, res: Response) => {
       data: {
         status: 'COMPLETED',
         completedAt: new Date()
+      },
+      include: {
+        project: true
       }
     });
     
-    res.json({ ...task, _id: task.id });
+    res.json({ ...task, _id: task.id, projectId: task.project });
   } catch (error: any) {
     console.error('POST /api/tasks/:id/complete error:', error);
     
@@ -219,10 +303,13 @@ router.delete('/:id/delete', async (req: Request, res: Response) => {
       data: {
         status: 'DELETED',
         deletedAt: new Date()
+      },
+      include: {
+        project: true
       }
     });
     
-    res.json({ ...task, _id: task.id });
+    res.json({ ...task, _id: task.id, projectId: task.project });
   } catch (error: any) {
     console.error('DELETE /api/tasks/:id/delete error:', error);
     
@@ -244,10 +331,13 @@ router.post('/:id/restore', async (req: Request, res: Response) => {
       data: {
         status: 'ACTIVE',
         deletedAt: null
+      },
+      include: {
+        project: true
       }
     });
     
-    res.json({ ...task, _id: task.id });
+    res.json({ ...task, _id: task.id, projectId: task.project });
   } catch (error: any) {
     console.error('POST /api/tasks/:id/restore error:', error);
     

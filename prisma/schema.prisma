@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,13 +11,12 @@ model Project {
   id          String      @id @default(cuid())
   name        String      @unique
   description String?
-  metadata    Json?       // Additional flexible data
+  metadata    Json?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
-  
-  tasks       Task[]
   references  Reference[]
-  
+  tasks       Task[]
+
   @@index([name])
   @@index([createdAt])
 }
@@ -28,17 +24,16 @@ model Project {
 model Task {
   id          String    @id @default(cuid())
   projectId   String
-  content     String    @db.Text
+  content     String
   priority    Priority  @default(MEDIUM)
   status      Status    @default(ACTIVE)
   completedAt DateTime?
   deletedAt   DateTime?
-  metadata    Json?     // Additional flexible data like tags, labels, etc.
+  metadata    Json?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  
   project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
+
   @@index([projectId, status])
   @@index([status])
   @@index([priority])
@@ -46,20 +41,19 @@ model Task {
 }
 
 model Reference {
-  id          String    @id @default(cuid())
-  projectId   String
-  title       String
-  content     String    @db.Text
-  url         String?
-  category    Category  @default(DOCUMENTATION)
-  priority    Priority  @default(MEDIUM)
-  tags        String[]  // PostgreSQL array support
-  metadata    Json?     // Additional flexible data
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
+  id        String   @id @default(cuid())
+  projectId String
+  title     String
+  content   String
+  url       String?
+  category  Category @default(DOCUMENTATION)
+  priority  Priority @default(MEDIUM)
+  tags      String[]
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
   @@index([projectId, category])
   @@index([category])
   @@index([tags])
