@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cosmicboard_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cosmicboard
+      POSTGRES_USER: cosmicuser
+      POSTGRES_PASSWORD: cosmic123!
+      PGDATA: /data/postgres
+    volumes:
+      - postgres_data:/data/postgres
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - cosmicboard_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: cosmicboard_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - cosmicboard_network
+    volumes:
+      - redis_data:/data
+
+  # Optional: pgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: cosmicboard_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@cosmicboard.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+    networks:
+      - cosmicboard_network
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  cosmicboard_network:
+    driver: bridge
