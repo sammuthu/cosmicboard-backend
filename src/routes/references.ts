@@ -34,7 +34,7 @@ router.get('/', async (req: Request, res: Response) => {
 // POST /api/references
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { projectId, title, content, url, category, priority, tags } = req.body;
+    const { projectId, title, content, url, category, priority, tags, metadata } = req.body;
     
     if (!projectId || !title || !content) {
       return res.status(400).json({ error: 'Project ID, title, and content are required' });
@@ -58,6 +58,8 @@ router.post('/', async (req: Request, res: Response) => {
       'api': 'API',
       'tutorial': 'TUTORIAL',
       'reference': 'REFERENCE',
+      'prompt': 'SNIPPET', // Map prompt to SNIPPET
+      'link': 'REFERENCE', // Map link to REFERENCE
       'other': 'DOCUMENTATION' // Default fallback
     };
     
@@ -70,7 +72,7 @@ router.post('/', async (req: Request, res: Response) => {
         category: categoryMap[category?.toLowerCase()] || 'DOCUMENTATION',
         priority: (priority || 'MEDIUM') as Priority,
         tags: tags || [],
-        metadata: {}
+        metadata: metadata || {}
       }
     });
     
