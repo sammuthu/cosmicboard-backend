@@ -156,4 +156,219 @@ router.delete('/:id', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/projects/:projectId/tasks
+router.get('/:projectId/tasks', async (req: Request, res: Response) => {
+  try {
+    const { projectId } = req.params;
+    
+    const tasks = await prisma.task.findMany({
+      where: { projectId },
+      orderBy: { createdAt: 'desc' }
+    });
+    
+    res.json(tasks);
+  } catch (error) {
+    console.error('GET /api/projects/:projectId/tasks error:', error);
+    res.status(500).json({ error: 'Failed to fetch tasks' });
+  }
+});
+
+// POST /api/projects/:projectId/tasks
+router.post('/:projectId/tasks', async (req: Request, res: Response) => {
+  try {
+    const { projectId } = req.params;
+    const { title, content, priority = 'MEDIUM', status = 'ACTIVE' } = req.body;
+    
+    const task = await prisma.task.create({
+      data: {
+        projectId,
+        content: content || title, // Use content or fallback to title
+        priority,
+        status
+      }
+    });
+    
+    res.status(201).json(task);
+  } catch (error: any) {
+    console.error('POST /api/projects/:projectId/tasks error:', error);
+    
+    if (error.code === 'P2003') {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
+    
+    res.status(500).json({ error: 'Failed to create task' });
+  }
+});
+
+// PUT /api/projects/:projectId/tasks/:taskId
+router.put('/:projectId/tasks/:taskId', async (req: Request, res: Response) => {
+  try {
+    const { taskId } = req.params;
+    const { content, priority, status } = req.body;
+    
+    const updateData: any = {};
+    if (content !== undefined) updateData.content = content;
+    if (priority !== undefined) updateData.priority = priority;
+    if (status !== undefined) {
+      updateData.status = status;
+      if (status === 'COMPLETED') {
+        updateData.completedAt = new Date();
+      } else if (status === 'ACTIVE') {
+        updateData.completedAt = null;
+      }
+    }
+    
+    const task = await prisma.task.update({
+      where: { id: taskId },
+      data: updateData
+    });
+    
+    res.json(task);
+  } catch (error: any) {
+    console.error('PUT /api/projects/:projectId/tasks/:taskId error:', error);
+    
+    if (error.code === 'P2025') {
+      res.status(404).json({ error: 'Task not found' });
+      return;
+    }
+    
+    res.status(500).json({ error: 'Failed to update task' });
+  }
+});
+
+// DELETE /api/projects/:projectId/tasks/:taskId
+router.delete('/:projectId/tasks/:taskId', async (req: Request, res: Response) => {
+  try {
+    const { taskId } = req.params;
+    
+    await prisma.task.delete({
+      where: { id: taskId }
+    });
+    
+    res.json({ message: 'Task deleted successfully' });
+  } catch (error: any) {
+    console.error('DELETE /api/projects/:projectId/tasks/:taskId error:', error);
+    
+    if (error.code === 'P2025') {
+      res.status(404).json({ error: 'Task not found' });
+      return;
+    }
+    
+    res.status(500).json({ error: 'Failed to delete task' });
+  }
+});
+
+// GET /api/projects/:projectId/references
+router.get('/:projectId/references', async (req: Request, res: Response) => {
+  try {
+    const { projectId } = req.params;
+    
+    const references = await prisma.reference.findMany({
+      where: { projectId },
+      orderBy: { createdAt: 'desc' }
+    });
+    
+    res.json(references);
+  } catch (error) {
+    console.error('GET /api/projects/:projectId/references error:', error);
+    res.status(500).json({ error: 'Failed to fetch references' });
+  }
+});
+
+// POST /api/projects/:projectId/references
+router.post('/:projectId/references', async (req: Request, res: Response) => {
+  try {
+    const { projectId } = req.params;
+    const { 
+      title, 
+      content = '', 
+      category = 'DOCUMENTATION', 
+      priority = 'MEDIUM',
+      tags = [],
+      url 
+    } = req.body;
+    
+    // Convert category to uppercase
+    const categoryUpper = category.toUpperCase() as any;
+    
+    const reference = await prisma.reference.create({
+      data: {
+        projectId,
+        title,
+        content,
+        category: categoryUpper,
+        priority,
+        tags,
+        url
+      }
+    });
+    
+    res.status(201).json(reference);
+  } catch (error: any) {
+    console.error('POST /api/projects/:projectId/references error:', error);
+    
+    if (error.code === 'P2003') {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
+    
+    res.status(500).json({ error: 'Failed to create reference' });
+  }
+});
+
+// PUT /api/projects/:projectId/references/:referenceId
+router.put('/:projectId/references/:referenceId', async (req: Request, res: Response) => {
+  try {
+    const { referenceId } = req.params;
+    const { title, content, category, priority, tags, url } = req.body;
+    
+    const updateData: any = {};
+    if (title !== undefined) updateData.title = title;
+    if (content !== undefined) updateData.content = content;
+    if (category !== undefined) updateData.category = category.toUpperCase();
+    if (priority !== undefined) updateData.priority = priority;
+    if (tags !== undefined) updateData.tags = tags;
+    if (url !== undefined) updateData.url = url;
+    
+    const reference = await prisma.reference.update({
+      where: { id: referenceId },
+      data: updateData
+    });
+    
+    res.json(reference);
+  } catch (error: any) {
+    console.error('PUT /api/projects/:projectId/references/:referenceId error:', error);
+    
+    if (error.code === 'P2025') {
+      res.status(404).json({ error: 'Reference not found' });
+      return;
+    }
+    
+    res.status(500).json({ error: 'Failed to update reference' });
+  }
+});
+
+// DELETE /api/projects/:projectId/references/:referenceId
+router.delete('/:projectId/references/:referenceId', async (req: Request, res: Response) => {
+  try {
+    const { referenceId } = req.params;
+    
+    await prisma.reference.delete({
+      where: { id: referenceId }
+    });
+    
+    res.json({ message: 'Reference deleted successfully' });
+  } catch (error: any) {
+    console.error('DELETE /api/projects/:projectId/references/:referenceId error:', error);
+    
+    if (error.code === 'P2025') {
+      res.status(404).json({ error: 'Reference not found' });
+      return;
+    }
+    
+    res.status(500).json({ error: 'Failed to delete reference' });
+  }
+});
+
 export default router;
