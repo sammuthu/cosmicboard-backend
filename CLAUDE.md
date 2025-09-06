@@ -44,10 +44,22 @@ npm test                # Run Jest tests (currently no tests implemented)
 - **src/services/**: Data access layer (to be implemented)
 
 ### Database Schema (PostgreSQL via Prisma)
-- **Project**: Core entity with tasks and references
+- **Project**: Core entity with tasks, references, and media
 - **Task**: Priority levels (LOW, MEDIUM, HIGH, URGENT), status tracking
 - **Reference**: Documentation/snippets with categories and tags
+- **Media**: Photos, screenshots, and PDF files associated with projects
+  - Types: photo, screenshot, pdf
+  - Includes url, thumbnailUrl, size, mimeType, metadata
 - Uses JSONB for flexible metadata storage
+
+### Media Feature Implementation Status
+**Important**: The Media feature implementation is documented in `photo-screenshots-pdf-feature.README.md`. This includes:
+- Complete API endpoints specification
+- File upload handling with formidable and sharp
+- Thumbnail generation for images
+- PDF metadata extraction
+- Screenshot paste functionality
+- Local file storage structure in `/uploads/`
 - Cascading deletes on relationships
 
 ### API Pattern

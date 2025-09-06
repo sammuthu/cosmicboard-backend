@@ -2,25 +2,50 @@ import express, { Application } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
+import { config, getCorsConfig, validateEnvironment } from './config/environment';
 
 // Load environment variables
 dotenv.config();
 
+// Validate environment configuration
+validateEnvironment();
+
 const app: Application = express();
-const PORT = process.env.PORT || 3001;
+const PORT = config.port;
 
 // Initialize Prisma
 export const prisma = new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  log: config.database.logging ? ['query', 'error', 'warn'] : ['error'],
 });
 
 // Middleware
-app.use(cors({
-  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000', 'http://localhost:8081', 'http://localhost:8082'],
-  credentials: true,
+app.use(cors(getCorsConfig()));
+app.use(express.json({ limit: '10mb' })); // Allow larger payloads for base64 images
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Serve static files for uploads with proper MIME types
+app.use('/uploads', express.static(config.storage.uploadDir, {
+  setHeaders: (res, filePath) => {
+    // Determine MIME type based on file path
+    if (filePath.includes('/photo/') || filePath.includes('/screenshot/')) {
+      // For images, check file extension or default to JPEG for thumbnails
+      if (filePath.includes('/thumbnails/') || filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
+        res.setHeader('Content-Type', 'image/jpeg');
+      } else if (filePath.endsWith('.png')) {
+        res.setHeader('Content-Type', 'image/png');
+      } else if (filePath.endsWith('.gif')) {
+        res.setHeader('Content-Type', 'image/gif');
+      } else if (filePath.endsWith('.webp')) {
+        res.setHeader('Content-Type', 'image/webp');
+      } else {
+        // Default to JPEG for images without extension
+        res.setHeader('Content-Type', 'image/jpeg');
+      }
+    } else if (filePath.includes('/pdf/') || filePath.endsWith('.pdf')) {
+      res.setHeader('Content-Type', 'application/pdf');
+    }
+  }
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // Import routes
 import apiRoutes from './routes';
@@ -44,9 +69,11 @@ app.use((_req, res) => {
 
 // Start server
 const server = app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV}`);
-  console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+  console.log(`🚀 CosmicBoard Backend running on port ${PORT}`);
+  console.log(`📊 Environment: ${config.name}`);
+  console.log(`💾 Storage: ${config.storage.type}`);
+  console.log(`🔗 Health check: http://localhost:${PORT}/api/health`);
+  console.log(`📋 API docs: http://localhost:${PORT}/api`);
 });
 
 // Graceful shutdown

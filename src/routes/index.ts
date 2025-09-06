@@ -2,6 +2,9 @@ import { Router } from 'express';
 import projectRoutes from './projects';
 import taskRoutes from './tasks';
 import referenceRoutes from './references';
+import mediaRoutes from './media';
+import searchRoutes from './search';
+import exportImportRoutes from './export-import';
 
 const router = Router();
 
@@ -9,6 +12,9 @@ const router = Router();
 router.use('/projects', projectRoutes);
 router.use('/tasks', taskRoutes);
 router.use('/references', referenceRoutes);
+router.use('/media', mediaRoutes);
+router.use('/search', searchRoutes);
+router.use('/', exportImportRoutes); // Export and import at root level
 
 // Health check
 router.get('/health', (_req, res) => {
@@ -28,6 +34,7 @@ router.get('/', (_req, res) => {
       projects: '/api/projects',
       tasks: '/api/tasks',
       references: '/api/references',
+      media: '/api/media',
       health: '/api/health'
     }
   });
