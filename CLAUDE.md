@@ -6,11 +6,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 CosmicBoard Backend - A Node.js/Express API service with PostgreSQL database using Prisma ORM, designed for task and project management with multi-priority support.
 
+## Infrastructure Configuration
+
+**IMPORTANT**: All nginx, DNS, and reverse proxy configurations are centralized in:
+```
+/Users/sammuthu/Projects/nginx-reverse-proxy/
+```
+
+Do NOT place nginx, hosts, or dnsmasq configurations in individual project folders (cosmicboard, cosmicboard-mobile, or cosmicboard-backend).
+
+### Domain Configuration
+- **Primary Domain**: cosmicspace.app
+- **Legacy Domain**: cosmic.board (redirects to cosmicspace.app)
+- **Backend API**: Proxied via nginx from cosmicspace.app/api to localhost:7779
+- **Nginx Config**: nginx-reverse-proxy/config/sites-available/cosmicspace.app.conf
+
 ## Essential Commands
 
 ### Development
 ```bash
-npm run dev              # Start development server with nodemon (port 7778)
+npm run dev              # Start development server with nodemon (port 7779)
 npm run build           # Compile TypeScript to JavaScript in ./dist
 npm start               # Start production server from ./dist
 ```
@@ -64,7 +79,7 @@ npm test                # Run Jest tests (currently no tests implemented)
 
 ### API Pattern
 All endpoints follow RESTful conventions:
-- Base URL: `http://localhost:7778/api`
+- Base URL: `http://localhost:7779/api`
 - Resources: `/projects`, `/tasks`, `/references`
 - Nested resources: `/projects/:projectId/tasks`
 - Standard CRUD operations with Express routing
@@ -82,12 +97,12 @@ All endpoints follow RESTful conventions:
 2. Apply any schema changes: `npm run prisma:generate && npm run prisma:migrate`
 3. Start dev server: `npm run dev`
 4. Make changes - server auto-restarts via nodemon
-5. Test endpoints at `http://localhost:7778/api`
+5. Test endpoints at `http://localhost:7779/api`
 
 ## Environment Variables
 Required in `.env`:
 - `DATABASE_URL`: PostgreSQL connection string
-- `PORT`: Server port (default 7778)
+- `PORT`: Server port (default 7779)
 - `NODE_ENV`: development/production
 - `CORS_ORIGIN`: Comma-separated allowed origins
 - JWT secrets and Redis URL for future authentication implementation

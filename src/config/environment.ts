@@ -59,6 +59,12 @@ const configs: Record<Environment, EnvironmentConfig> = {
         'https://cosmic.board:8888',
         'http://m.cosmic.board',
         'https://m.cosmic.board',
+        'http://cosmicspace.app',
+        'https://cosmicspace.app',
+        'http://www.cosmicspace.app',
+        'https://www.cosmicspace.app',
+        'http://api.cosmicspace.app',
+        'https://api.cosmicspace.app',
         'http://192.168.0.18:7777',
         'http://192.168.0.18:8888'
       ],
