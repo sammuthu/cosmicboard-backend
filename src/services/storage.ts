@@ -58,10 +58,20 @@ export class StorageService {
         size: processed.size
       };
     } else {
-      // For PDFs, keep original format
+      // For documents (PDFs and all other files), keep original format
       const timestamp = Date.now();
       const sanitizedName = fileInfo.originalName.replace(/[^a-zA-Z0-9.-]/g, '_');
       fileName = `${timestamp}_${sanitizedName}`;
+      
+      // Ensure correct mimeType is set
+      if (!fileInfo.mimeType || fileInfo.mimeType === 'application/octet-stream') {
+        const extension = path.extname(fileInfo.originalName).substring(1).toLowerCase();
+        // Use the validateFile method's mimeType detection
+        const validation = this.validateFile(fileInfo);
+        if (validation.valid && fileInfo.mimeType) {
+          processedFileInfo.mimeType = fileInfo.mimeType;
+        }
+      }
     }
     
     let url: string;
@@ -226,35 +236,54 @@ export class StorageService {
         'heic': 'image/heic',
         'heif': 'image/heif',
         'avif': 'image/avif',
-        // PDFs
-        'pdf': 'application/pdf'
+        // Documents
+        'pdf': 'application/pdf',
+        'txt': 'text/plain',
+        'csv': 'text/csv',
+        'doc': 'application/msword',
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'xls': 'application/vnd.ms-excel',
+        'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'ppt': 'application/vnd.ms-powerpoint',
+        'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        // Code files
+        'html': 'text/html',
+        'css': 'text/css',
+        'js': 'application/javascript',
+        'json': 'application/json',
+        'xml': 'application/xml',
+        'md': 'text/markdown',
+        // Archives
+        'zip': 'application/zip',
+        'rar': 'application/vnd.rar',
+        '7z': 'application/x-7z-compressed',
+        'tar': 'application/x-tar',
+        'gz': 'application/gzip',
+        // Media
+        'mp4': 'video/mp4',
+        'mp3': 'audio/mpeg',
+        'wav': 'audio/wav',
+        'avi': 'video/x-msvideo',
+        'mov': 'video/quicktime',
+        // Other
+        'exe': 'application/vnd.microsoft.portable-executable',
+        'dmg': 'application/x-apple-diskimage',
+        'pkg': 'application/x-newton-compatible-pkg',
+        'deb': 'application/vnd.debian.binary-package'
       };
       
       if (extensionToMime[extension]) {
         mimeType = extensionToMime[extension];
         console.log(`Detected MIME type '${mimeType}' from extension '${extension}'`);
+      } else {
+        // For unknown extensions, use a generic binary type
+        mimeType = 'application/octet-stream';
       }
     }
     
-    // Check file type
-    if (mimeType.startsWith('image/')) {
-      // Accept all image types - we'll convert unsupported ones
-      return { valid: true };
-    } else if (mimeType === 'application/pdf' || extension === 'pdf') {
-      // Accept PDFs
-      return { valid: true };
-    } else {
-      // Try to determine if it's an image based on extension
-      const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico', 'tiff', 'tif', 'heic', 'heif', 'avif'];
-      if (imageExtensions.includes(extension)) {
-        return { valid: true };
-      }
-      
-      return {
-        valid: false,
-        error: `File type '${mimeType || extension}' is not supported. Supported types: images (jpg, png, gif, etc.) and PDFs`
-      };
-    }
+    // Accept all file types for documents/scrolls
+    // We'll let the frontend handle which files can be viewed vs downloaded only
+    return { valid: true };
   }
 }
 

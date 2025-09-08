@@ -71,14 +71,10 @@ router.post('/upload', async (req: Request, res: Response) => {
       size: file.size
     };
     
-    // For images, we'll process any format (including HEIC from iPhones)
-    // The storage service will handle conversion to JPEG
-    // Skip validation for images as we'll convert them anyway
-    if (type !== 'photo' && type !== 'screenshot') {
-      const validation = storageService.validateFile(fileInfo);
-      if (!validation.valid) {
-        return res.status(400).json({ error: validation.error });
-      }
+    // Validate file (now accepts all file types)
+    const validation = storageService.validateFile(fileInfo);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
     }
     
     // Save file to storage
@@ -91,21 +87,42 @@ router.post('/upload', async (req: Request, res: Response) => {
     
     // Extract metadata based on file type
     let metadata: any = {};
+    const extension = path.extname(fileInfo.originalName).substring(1).toLowerCase();
     
     if (fileInfo.mimeType.startsWith('image/')) {
       // For images, we could use sharp to get dimensions, but it's optional
-      metadata = { type: 'image' };
+      metadata = { 
+        type: 'image',
+        extension,
+        isViewable: true 
+      };
     } else if (fileInfo.mimeType === 'application/pdf') {
       try {
         const pdfData = await pdfParse(buffer);
         metadata = {
+          type: 'document',
+          extension: 'pdf',
           pages: pdfData.numpages,
-          text: pdfData.text.substring(0, 1000) // Store first 1000 chars for search
+          text: pdfData.text.substring(0, 1000), // Store first 1000 chars for search
+          isViewable: true
         };
       } catch (error) {
         console.warn('Failed to parse PDF metadata:', error);
-        metadata = { type: 'pdf' };
+        metadata = { 
+          type: 'document',
+          extension: 'pdf',
+          isViewable: true 
+        };
       }
+    } else {
+      // For other file types, store basic metadata
+      const viewableExtensions = ['txt', 'csv', 'md', 'json', 'xml', 'html', 'css', 'js', 'ts', 'jsx', 'tsx', 'py', 'java', 'c', 'cpp', 'h', 'hpp', 'cs', 'php', 'rb', 'go', 'rs', 'swift', 'kt', 'sql', 'sh', 'yml', 'yaml', 'toml', 'ini', 'cfg', 'conf', 'log'];
+      metadata = {
+        type: 'document',
+        extension,
+        isViewable: viewableExtensions.includes(extension),
+        mimeType: fileInfo.mimeType
+      };
     }
     
     // Save to database
