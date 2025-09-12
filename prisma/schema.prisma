@@ -30,6 +30,7 @@ model User {
   Subscription               Subscription?
   Task_Task_assigneeIdToUser Task[]         @relation("Task_assigneeIdToUser")
   Task_Task_creatorIdToUser  Task[]         @relation("Task_creatorIdToUser")
+  Media                      Media[]
 
   @@index([email])
 }
@@ -74,6 +75,7 @@ model Project {
   User        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   references  Reference[]
   tasks       Task[]
+  media       Media[]
 
   @@index([archived])
   @@index([userId])
@@ -193,4 +195,32 @@ enum TaskStatus {
   COMPLETED
   DELETED
   ARCHIVED
+}
+
+enum MediaType {
+  PHOTO
+  SCREENSHOT
+  PDF
+}
+
+model Media {
+  id           String    @id @default(cuid())
+  projectId    String
+  userId       String
+  type         MediaType
+  name         String
+  url          String
+  thumbnailUrl String?
+  size         Int
+  mimeType     String
+  metadata     Json?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  
+  project      Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([projectId])
+  @@index([userId])
+  @@index([type])
 }

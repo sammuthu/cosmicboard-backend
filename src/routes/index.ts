@@ -3,9 +3,9 @@ import authRoutes from './auth';
 import projectRoutes from './projects';
 import taskRoutes from './tasks';
 import referenceRoutes from './references';
-// import mediaRoutes from './media'; // Disabled - Media model not in current schema
-// import searchRoutes from './search'; // Temporarily disabled
-// import exportImportRoutes from './export-import'; // Temporarily disabled - media issues
+import mediaRoutes from './media';
+import searchRoutes from './search';
+import exportImportRoutes from './export-import';
 
 const router = Router();
 
@@ -14,9 +14,9 @@ router.use('/auth', authRoutes);
 router.use('/projects', projectRoutes);
 router.use('/tasks', taskRoutes);
 router.use('/references', referenceRoutes);
-// router.use('/media', mediaRoutes); // Disabled - Media model not in current schema
-// router.use('/search', searchRoutes); // Temporarily disabled
-// router.use('/', exportImportRoutes); // Export and import at root level - temporarily disabled
+router.use('/media', mediaRoutes);
+router.use('/search', searchRoutes);
+router.use('/', exportImportRoutes); // Export and import at root level
 
 // Health check
 router.get('/health', (_req, res) => {
@@ -37,6 +37,10 @@ router.get('/', (_req, res) => {
       projects: '/api/projects',
       tasks: '/api/tasks',
       references: '/api/references',
+      media: '/api/media',
+      search: '/api/search',
+      export: '/api/export',
+      import: '/api/import',
       health: '/api/health'
     }
   });
