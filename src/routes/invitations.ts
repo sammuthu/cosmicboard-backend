@@ -1,0 +1,366 @@
+import { Router, Request, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+import { authenticate, AuthRequest } from '../middleware/auth';
+import nodemailer from 'nodemailer';
+import crypto from 'crypto';
+
+const router = Router();
+const prisma = new PrismaClient();
+
+// Configure email transporter (using Gmail as example)
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER || 'your-email@gmail.com',
+    pass: process.env.EMAIL_PASS || 'your-app-password'
+  }
+});
+
+// For development, use console.log instead of actual email
+const sendEmail = async (to: string, subject: string, html: string) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log('📧 Email would be sent:');
+    console.log('To:', to);
+    console.log('Subject:', subject);
+    console.log('Content:', html);
+    return { messageId: 'dev-' + Date.now() };
+  }
+
+  try {
+    const info = await transporter.sendMail({
+      from: process.env.EMAIL_FROM || '"Cosmic Space" <noreply@cosmicspace.app>',
+      to,
+      subject,
+      html
+    });
+    return info;
+  } catch (error) {
+    console.error('Email send error:', error);
+    throw error;
+  }
+};
+
+// Send invitations
+router.post('/send', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { emails, projectId, message } = req.body;
+    const userId = req.userId!;
+
+    if (!emails || !Array.isArray(emails) || emails.length === 0) {
+      return res.status(400).json({ error: 'Email addresses are required' });
+    }
+
+    // Get user info
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const results = [];
+    const errors = [];
+
+    for (const email of emails) {
+      try {
+        // Generate invitation token
+        const token = crypto.randomBytes(32).toString('hex');
+        
+        // Create invitation record
+        const invitation = await prisma.invitation.create({
+          data: {
+            email,
+            token,
+            invitedById: userId,
+            projectId: projectId || null,
+            message: message || null,
+            status: 'pending',
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+          }
+        });
+
+        // Prepare email content
+        const inviteUrl = `${process.env.FRONTEND_URL || 'http://localhost:7777'}/join?token=${token}`;
+        const emailHtml = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #6B46C1;">You're invited to Cosmic Space!</h2>
+            <p>${user.name || user.email} has invited you to collaborate on Cosmic Space.</p>
+            ${message ? `<p style="background: #F3F4F6; padding: 15px; border-radius: 8px;">${message}</p>` : ''}
+            <div style="margin: 30px 0;">
+              <a href="${inviteUrl}" style="background: #6B46C1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                Accept Invitation
+              </a>
+            </div>
+            <p style="color: #6B7280; font-size: 14px;">
+              Or copy this link: <br>
+              <code style="background: #F3F4F6; padding: 5px;">${inviteUrl}</code>
+            </p>
+            <p style="color: #6B7280; font-size: 12px; margin-top: 30px;">
+              This invitation expires in 7 days.
+            </p>
+          </div>
+        `;
+
+        // Send email
+        await sendEmail(
+          email,
+          `${user.name || user.email} invited you to Cosmic Space`,
+          emailHtml
+        );
+
+        // Update invitation status
+        await prisma.invitation.update({
+          where: { id: invitation.id },
+          data: { status: 'sent', sentAt: new Date() }
+        });
+
+        results.push({
+          email,
+          status: 'sent',
+          invitationId: invitation.id
+        });
+
+      } catch (error: any) {
+        console.error(`Failed to send invitation to ${email}:`, error);
+        errors.push({
+          email,
+          error: error.message
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      sent: results,
+      failed: errors
+    });
+
+  } catch (error: any) {
+    console.error('Send invitations error:', error);
+    res.status(500).json({ error: 'Failed to send invitations' });
+  }
+});
+
+// Get user's sent invitations
+router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId!;
+
+    const invitations = await prisma.invitation.findMany({
+      where: { invitedById: userId },
+      include: {
+        project: {
+          select: { name: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json(invitations);
+  } catch (error) {
+    console.error('Get invitations error:', error);
+    res.status(500).json({ error: 'Failed to fetch invitations' });
+  }
+});
+
+// Resend invitation
+router.post('/:id/resend', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = req.userId!;
+
+    const invitation = await prisma.invitation.findFirst({
+      where: {
+        id,
+        invitedById: userId
+      },
+      include: {
+        invitedBy: true,
+        project: true
+      }
+    });
+
+    if (!invitation) {
+      return res.status(404).json({ error: 'Invitation not found' });
+    }
+
+    // Generate new token
+    const token = crypto.randomBytes(32).toString('hex');
+    
+    // Update invitation
+    await prisma.invitation.update({
+      where: { id },
+      data: {
+        token,
+        status: 'sent',
+        sentAt: new Date(),
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      }
+    });
+
+    // Resend email
+    const inviteUrl = `${process.env.FRONTEND_URL || 'http://localhost:7777'}/join?token=${token}`;
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #6B46C1;">Reminder: You're invited to Cosmic Space!</h2>
+        <p>${invitation.invitedBy.name || invitation.invitedBy.email} has invited you to collaborate on Cosmic Space.</p>
+        ${invitation.message ? `<p style="background: #F3F4F6; padding: 15px; border-radius: 8px;">${invitation.message}</p>` : ''}
+        <div style="margin: 30px 0;">
+          <a href="${inviteUrl}" style="background: #6B46C1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+            Accept Invitation
+          </a>
+        </div>
+        <p style="color: #6B7280; font-size: 14px;">
+          Or copy this link: <br>
+          <code style="background: #F3F4F6; padding: 5px;">${inviteUrl}</code>
+        </p>
+        <p style="color: #6B7280; font-size: 12px; margin-top: 30px;">
+          This invitation expires in 7 days.
+        </p>
+      </div>
+    `;
+
+    await sendEmail(
+      invitation.email,
+      `Reminder: ${invitation.invitedBy.name || invitation.invitedBy.email} invited you to Cosmic Space`,
+      emailHtml
+    );
+
+    res.json({ success: true, message: 'Invitation resent' });
+
+  } catch (error) {
+    console.error('Resend invitation error:', error);
+    res.status(500).json({ error: 'Failed to resend invitation' });
+  }
+});
+
+// Cancel invitation
+router.delete('/:id', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = req.userId!;
+
+    const invitation = await prisma.invitation.findFirst({
+      where: {
+        id,
+        invitedById: userId,
+        status: { in: ['pending', 'sent'] }
+      }
+    });
+
+    if (!invitation) {
+      return res.status(404).json({ error: 'Invitation not found' });
+    }
+
+    await prisma.invitation.update({
+      where: { id },
+      data: { status: 'cancelled' }
+    });
+
+    res.json({ success: true, message: 'Invitation cancelled' });
+
+  } catch (error) {
+    console.error('Cancel invitation error:', error);
+    res.status(500).json({ error: 'Failed to cancel invitation' });
+  }
+});
+
+// Accept invitation (public endpoint)
+router.post('/accept', async (req: Request, res: Response) => {
+  try {
+    const { token, email, password, name } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ error: 'Invitation token is required' });
+    }
+
+    const invitation = await prisma.invitation.findFirst({
+      where: {
+        token,
+        status: 'sent',
+        expiresAt: { gt: new Date() }
+      },
+      include: {
+        project: true,
+        invitedBy: true
+      }
+    });
+
+    if (!invitation) {
+      return res.status(404).json({ error: 'Invalid or expired invitation' });
+    }
+
+    // Check if user already exists
+    let user = await prisma.user.findUnique({
+      where: { email: invitation.email }
+    });
+
+    if (!user) {
+      // Create new user
+      if (!password) {
+        return res.status(400).json({ error: 'Password is required for new users' });
+      }
+
+      const bcrypt = require('bcryptjs');
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      user = await prisma.user.create({
+        data: {
+          email: invitation.email,
+          password: hashedPassword,
+          name: name || invitation.email.split('@')[0]
+        }
+      });
+    }
+
+    // Accept invitation
+    await prisma.invitation.update({
+      where: { id: invitation.id },
+      data: {
+        status: 'accepted',
+        acceptedAt: new Date(),
+        acceptedById: user.id
+      }
+    });
+
+    // Add user to project if specified
+    if (invitation.projectId) {
+      await prisma.projectCollaborator.create({
+        data: {
+          projectId: invitation.projectId,
+          userId: user.id,
+          role: 'viewer',
+          addedById: invitation.invitedById
+        }
+      }).catch(() => {
+        // Ignore if already exists
+      });
+    }
+
+    // Generate JWT token for auto-login
+    const jwt = require('jsonwebtoken');
+    const authToken = jwt.sign(
+      { userId: user.id, email: user.email },
+      process.env.JWT_SECRET || 'cosmic-secret-key',
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      success: true,
+      token: authToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name
+      },
+      project: invitation.project
+    });
+
+  } catch (error) {
+    console.error('Accept invitation error:', error);
+    res.status(500).json({ error: 'Failed to accept invitation' });
+  }
+});
+
+export default router;
