@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import authRoutes from './auth';
 import projectRoutes from './projects';
 import taskRoutes from './tasks';
 import referenceRoutes from './references';
@@ -9,6 +10,7 @@ import exportImportRoutes from './export-import';
 const router = Router();
 
 // Mount routes
+router.use('/auth', authRoutes);
 router.use('/projects', projectRoutes);
 router.use('/tasks', taskRoutes);
 router.use('/references', referenceRoutes);
@@ -31,6 +33,7 @@ router.get('/', (_req, res) => {
     message: 'CosmicBoard Backend API',
     version: '1.0.0',
     endpoints: {
+      auth: '/api/auth',
       projects: '/api/projects',
       tasks: '/api/tasks',
       references: '/api/references',

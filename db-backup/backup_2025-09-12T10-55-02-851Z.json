@@ -1,0 +1,625 @@
+{
+  "timestamp": "2025-09-12T10:55:02.851Z",
+  "data": {
+    "projects": [
+      {
+        "id": "cmf3iai030000m64zq7rnw4v4",
+        "name": "Universal Prompts",
+        "description": "Store all Universal Prompts",
+        "metadata": {},
+        "createdAt": "2025-09-01T06:09:32.633Z",
+        "updatedAt": "2025-09-01T06:09:32.633Z"
+      },
+      {
+        "id": "cmf3iai050001m64zprn96qkk",
+        "name": "Zen Algorithms Viral Plan - Sub Agents",
+        "description": "Plan to bootstrap ZenAlgorithm with multi agent development model",
+        "metadata": {},
+        "createdAt": "2025-09-01T09:22:18.110Z",
+        "updatedAt": "2025-09-01T09:22:18.110Z"
+      },
+      {
+        "id": "cmf3iai060002m64zjd6jy8q0",
+        "name": "Zen Algorithm LLC",
+        "description": "Zen Algorithm LLC pending tasks",
+        "metadata": {},
+        "createdAt": "2025-09-01T19:25:26.819Z",
+        "updatedAt": "2025-09-01T19:25:26.819Z"
+      },
+      {
+        "id": "cmf3iai070003m64z9kflalgr",
+        "name": "Prism RAG DEV - Onyx",
+        "description": "Onyx Tasks and references",
+        "metadata": {},
+        "createdAt": "2025-09-01T19:29:51.206Z",
+        "updatedAt": "2025-09-01T19:29:51.206Z"
+      },
+      {
+        "id": "cmf3iai080004m64z17qepguc",
+        "name": "Nginx Reverse Proxy Manager",
+        "description": "Centralized nginx configuration and port management for all development services",
+        "metadata": {},
+        "createdAt": "2025-09-03T02:52:59.261Z",
+        "updatedAt": "2025-09-03T02:52:59.261Z"
+      },
+      {
+        "id": "cmf3l0iqv0000m6anec4pxlau",
+        "name": "Cosmic Board AppStore description and naming",
+        "description": "",
+        "metadata": {},
+        "createdAt": "2025-09-03T06:13:59.910Z",
+        "updatedAt": "2025-09-03T06:13:59.910Z"
+      },
+      {
+        "id": "cmf3r8pej0000m6sqwagacb57",
+        "name": "From iPhone",
+        "description": null,
+        "metadata": {},
+        "createdAt": "2025-09-03T09:08:19.484Z",
+        "updatedAt": "2025-09-03T09:08:19.484Z"
+      },
+      {
+        "id": "cmf9fgacq0000m6va4492c9ly",
+        "name": "Test Project",
+        "description": "Test description",
+        "metadata": {},
+        "createdAt": "2025-09-07T08:24:54.869Z",
+        "updatedAt": "2025-09-07T08:24:54.869Z"
+      },
+      {
+        "id": "cmf9fgfsv0001m6vatm5o1l28",
+        "name": "Test Project 2",
+        "description": "Test description 2",
+        "metadata": {},
+        "createdAt": "2025-09-07T08:25:01.952Z",
+        "updatedAt": "2025-09-07T08:25:01.952Z"
+      },
+      {
+        "id": "cmf9fgqld0002m6va8beg9rgo",
+        "name": "Cosmic Board Agents",
+        "description": "Planning for Cosmic board agents",
+        "metadata": {},
+        "createdAt": "2025-09-07T08:25:15.935Z",
+        "updatedAt": "2025-09-07T08:25:15.935Z"
+      },
+      {
+        "id": "cmfbqf0ln0000m6os28skps0i",
+        "name": "Cosmic Space Web-Mobile Sync Implementation Guide",
+        "description": "Comprehensive methodology and reference guide for maintaining feature parity between CosmicBoard web and mobile applications",
+        "metadata": {},
+        "createdAt": "2025-09-08T23:07:23.723Z",
+        "updatedAt": "2025-09-08T23:07:23.723Z"
+      }
+    ],
+    "tasks": [
+      {
+        "id": "cmf3iai090006m64z5ekxjgs5",
+        "projectId": "cmf3iai030000m64zq7rnw4v4",
+        "content": "Create universal prompt template",
+        "priority": "HIGH",
+        "status": "ACTIVE",
+        "completedAt": null,
+        "deletedAt": null,
+        "metadata": {
+          "tags": [],
+          "dueDate": null,
+          "contentHtml": "<p>Design and implement a universal prompt template system</p>",
+          "originalMongoId": "68b541b473c2cc4bceb4ecf5"
+        },
+        "createdAt": "2025-09-01T06:48:20.958Z",
+        "updatedAt": "2025-09-01T06:48:20.958Z"
+      },
+      {
+        "id": "cmf3iai0b000am64z18n8r1vl",
+        "projectId": "cmf3iai050001m64zprn96qkk",
+        "content": "Multi Agent Development",
+        "priority": "HIGH",
+        "status": "ACTIVE",
+        "completedAt": null,
+        "deletedAt": null,
+        "metadata": {
+          "tags": [
+            "#multimodel #supernova"
+          ],
+          "dueDate": "2025-09-03T00:00:00.000Z",
+          "contentHtml": "<p>- Create multimodel agaent as follows<br>-- Problem analyzer<br>-- Problem theme creator<br>-- Solution Analyzer<br>-- Solution theme creator<br>-- Visualization Analyzer<br>-- Visualization creatror<br>-- Super animation creator<br>-- Code snippet debug analyzer<br>-- Code snippet debug creator<br>- Add comment feature<br>- Add suggestion feature<br>- New theme creator from suggestion</p>",
+          "originalMongoId": "68b566bc87a0b2cf796da686"
+        },
+        "createdAt": "2025-09-01T09:26:20.012Z",
+        "updatedAt": "2025-09-01T09:26:20.012Z"
+      },
+      {
+        "id": "cmf3iai0c000cm64zqbm9gmvs",
+        "projectId": "cmf3iai060002m64zjd6jy8q0",
+        "content": "iPostal1 - USPC form completion",
+        "priority": "MEDIUM",
+        "status": "ACTIVE",
+        "completedAt": null,
+        "deletedAt": null,
+        "metadata": {
+          "tags": [],
+          "dueDate": "2025-09-03T00:00:00.000Z",
+          "contentHtml": "<p>https://portal.ipostal1.com/mailbox</p>",
+          "originalMongoId": "68b5f40987a0b2cf796da6a6"
+        },
+        "createdAt": "2025-09-01T19:29:13.320Z",
+        "updatedAt": "2025-09-01T19:29:13.320Z"
+      },
+      {
+        "id": "cmf3iai0c000em64zndq39gw9",
+        "projectId": "cmf3iai070003m64z9kflalgr",
+        "content": "File Connector",
+        "priority": "LOW",
+        "status": "ACTIVE",
+        "completedAt": null,
+        "deletedAt": null,
+        "metadata": {
+          "tags": [],
+          "dueDate": "2025-09-07T00:00:00.000Z",
+          "contentHtml": null,
+          "originalMongoId": "68b5f4b987a0b2cf796da6d6"
+        },
+        "createdAt": "2025-09-01T19:32:09.367Z",
+        "updatedAt": "2025-09-01T19:32:09.367Z"
+      },
+      {
+        "id": "cmf3iai0a0008m64z772jpdxu",
+        "projectId": "cmf3iai030000m64zq7rnw4v4",
+        "content": "Test task creation after fix",
+        "priority": "MEDIUM",
+        "status": "ACTIVE",
+        "completedAt": null,
+        "deletedAt": null,
+        "metadata": {
+          "tags": [],
+          "dueDate": null,
+          "contentHtml": "<p>This is a test task to verify the form works</p>",
+          "originalMongoId": "68b548e173c2cc4bceb4ed20"
+        },
+        "createdAt": "2025-09-01T07:18:57.652Z",
+        "updatedAt": "2025-09-03T07:10:22.238Z"
+      },
+      {
+        "id": "cmf3r931m0002m6sq09m2gtxg",
+        "projectId": "cmf3r8pej0000m6sqwagacb57",
+        "content": "Test task",
+        "priority": "MEDIUM",
+        "status": "ACTIVE",
+        "completedAt": null,
+        "deletedAt": null,
+        "metadata": null,
+        "createdAt": "2025-09-03T09:08:37.163Z",
+        "updatedAt": "2025-09-03T09:08:37.163Z"
+      }
+    ],
+    "references": [
+      {
+        "id": "cmf3iai0d000gm64zvewf22d2",
+        "projectId": "cmf3iai030000m64zq7rnw4v4",
+        "title": "React Component Template",
+        "content": "import React from 'react'\n\ninterface Props {\n  // Define props here\n}\n\nexport default function ComponentName({ }: Props) {\n  return (\n    <div>\n      {/* Component content */}\n    </div>\n  )\n}",
+        "url": null,
+        "category": "SNIPPET",
+        "priority": "MEDIUM",
+        "tags": [
+          "react",
+          "typescript",
+          "template"
+        ],
+        "metadata": {
+          "originalMongoId": "68b541c873c2cc4bceb4ed01"
+        },
+        "createdAt": "2025-09-01T06:48:40.541Z",
+        "updatedAt": "2025-09-01T06:48:40.541Z"
+      },
+      {
+        "id": "cmf3iai0e000im64z0xr0m64c",
+        "projectId": "cmf3iai030000m64zq7rnw4v4",
+        "title": "Claude System Prompt Template",
+        "content": "You are Claude, an AI assistant created by Anthropic. You are helpful, harmless, and honest.\n\nYour capabilities:\n- Answer questions accurately\n- Help with coding and technical tasks\n- Provide creative writing assistance\n- Analyze and summarize information\n\nAlways:\n- Be respectful and professional\n- Admit when you are uncertain\n- Provide clear explanations",
+        "url": null,
+        "category": "DOCUMENTATION",
+        "priority": "MEDIUM",
+        "tags": [
+          "claude",
+          "system-prompt",
+          "ai"
+        ],
+        "metadata": {
+          "originalMongoId": "68b545bc73c2cc4bceb4ed12"
+        },
+        "createdAt": "2025-09-01T07:05:32.799Z",
+        "updatedAt": "2025-09-01T07:05:32.799Z"
+      },
+      {
+        "id": "cmf3iai0e000km64zbjysn5y3",
+        "projectId": "cmf3iai030000m64zq7rnw4v4",
+        "title": "Apply Sam's Theme Prompt",
+        "content": "Apply Sam's theme from https://github.com/sammuthu/sams-theme-template",
+        "url": null,
+        "category": "DOCUMENTATION",
+        "priority": "MEDIUM",
+        "tags": [],
+        "metadata": {
+          "originalMongoId": "68b54a0973c2cc4bceb4ed28"
+        },
+        "createdAt": "2025-09-01T07:23:53.172Z",
+        "updatedAt": "2025-09-01T07:23:53.172Z"
+      },
+      {
+        "id": "cmf3iai0f000mm64z4p5l2k3w",
+        "projectId": "cmf3iai030000m64zq7rnw4v4",
+        "title": "Reverse Proxy Setup Guide - Map Any Service to Custom Domain",
+        "content": "# Quick Setup for New Service\n\n## Step 1: Add Domain to /etc/hosts\n```bash\n# For local-only access\necho \"127.0.0.1 yourdomain.local\" | sudo tee -a /etc/hosts\n\n# For network access (use your IP)\necho \"192.168.0.18 yourdomain.local\" | sudo tee -a /etc/hosts\n```\n\n## Step 2: Configure Nginx\nEdit `/opt/homebrew/etc/nginx/nginx.conf` and add:\n\n```nginx\n# Your Service Name\nserver {\n    listen 80;\n    server_name yourdomain.local;\n\n    location / {\n        proxy_pass http://127.0.0.1:YOUR_PORT;\n        proxy_http_version 1.1;\n        proxy_set_header Upgrade $http_upgrade;\n        proxy_set_header Connection 'upgrade';\n        proxy_set_header Host $host;\n        proxy_cache_bypass $http_upgrade;\n        proxy_set_header X-Real-IP $remote_addr;\n        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n        proxy_set_header X-Forwarded-Proto $scheme;\n    }\n}\n```\n\n## Step 3: Reload Nginx\n```bash\nnginx -t && brew services reload nginx\n```\n\n## Real Example: prism.ai (Successfully Configured)\n- **Service**: RichPrism AI on port 9393\n- **Domain**: prism.ai\n- **Result**: http://localhost:9393 → http://prism.ai\n\n### prism.ai nginx config:\n```nginx\nserver {\n    listen 80;\n    server_name prism.ai;\n    \n    location / {\n        proxy_pass http://127.0.0.1:9393;\n        # ... proxy headers ...\n    }\n}\n```\n\n## Currently Active Services\n| Domain | Service | Port |\n|--------|---------|------|\n| cosmic.board | CosmicBoard | 7777 |\n| loopify.sam | Segment Loop | 8088 |\n| prism.ai | RichPrism AI | 9393 |\n\n## Troubleshooting\n```bash\n# Check domain resolution\nping yourdomain.local\n\n# Test nginx routing\ncurl -H \"Host: yourdomain.local\" http://127.0.0.1\n\n# Flush DNS cache\nsudo dscacheutil -flushcache\n```",
+        "url": null,
+        "category": "DOCUMENTATION",
+        "priority": "HIGH",
+        "tags": [
+          "nginx",
+          "reverse-proxy",
+          "networking",
+          "localhost",
+          "domains",
+          "prism.ai"
+        ],
+        "metadata": {
+          "originalMongoId": "68b55d49c0913b1add1deab7"
+        },
+        "createdAt": "2025-09-01T08:46:01.919Z",
+        "updatedAt": "2025-09-01T08:46:01.919Z"
+      },
+      {
+        "id": "cmf3iai0f000om64z9tail620",
+        "projectId": "cmf3iai030000m64zq7rnw4v4",
+        "title": "Port Allocation Registry",
+        "content": "Keep track of all services and their ports to avoid conflicts.\n\n## Active Services\n- **Port 80**: Nginx (reverse proxy)\n- **Port 7777**: CosmicBoard\n- **Port 8088**: Loopify Frontend  \n- **Port 9001**: Loopify Backend API\n- **Port 9393**: Prism AI (RichPrism)\n- **Port 27017**: MongoDB\n\n## Available Port Ranges\n- **3000-3999**: Node.js apps\n- **4000-4999**: Dev servers\n- **5000-5999**: Python apps\n- **7000-7999**: Custom services\n- **8000-8999**: Alternative HTTP\n- **9000-9999**: API services\n\n## Check Port Usage\n```bash\n# Check if port is in use\nlsof -i :PORT_NUMBER\n\n# Kill process on port\nlsof -ti:PORT_NUMBER | xargs kill -9\n\n# Check all web ports\nlsof -i :80 -i :7777 -i :8088 -i :9393\n```",
+        "url": null,
+        "category": "DOCUMENTATION",
+        "priority": "MEDIUM",
+        "tags": [
+          "ports",
+          "networking",
+          "registry"
+        ],
+        "metadata": {
+          "originalMongoId": "68b55d7ec0913b1add1deacc"
+        },
+        "createdAt": "2025-09-01T08:46:54.269Z",
+        "updatedAt": "2025-09-01T08:46:54.269Z"
+      },
+      {
+        "id": "cmf3iai0g000qm64zine49jko",
+        "projectId": "cmf3iai030000m64zq7rnw4v4",
+        "title": "Nginx Troubleshooting Commands",
+        "content": "Quick reference for debugging nginx reverse proxy issues.\n\n## Test Configuration\n```bash\n# Check nginx syntax\nnginx -t\n\n# View error log\ntail -f /opt/homebrew/var/log/nginx/error.log\n```\n\n## Service Management\n```bash\n# Restart nginx\nbrew services restart nginx\n\n# Check status\nbrew services list | grep nginx\n\n# Stop and start\nbrew services stop nginx\nbrew services start nginx\n```\n\n## Test Domain Resolution\n```bash\n# Test hosts file entry\nping yourdomain.local\n\n# Test nginx routing (without hosts entry)\ncurl -H \"Host: yourdomain.local\" http://127.0.0.1\n\n# Flush DNS cache\nsudo dscacheutil -flushcache\nsudo killall -HUP mDNSResponder\n```\n\n## Debug Specific Services\n```bash\n# Test prism.ai\ncurl -I http://prism.ai\n\n# Test cosmic.board\ncurl -I http://cosmic.board\n\n# Check what nginx returns\ncurl -v http://yourdomain.local\n```\n\n## Common Fixes\n- **Domain not resolving**: Check /etc/hosts\n- **Wrong service loading**: Check nginx server_name\n- **502 Bad Gateway**: Service not running on expected port\n- **Connection refused**: Check if service is actually running",
+        "url": null,
+        "category": "DOCUMENTATION",
+        "priority": "HIGH",
+        "tags": [
+          "nginx",
+          "troubleshooting",
+          "debug",
+          "commands"
+        ],
+        "metadata": {
+          "originalMongoId": "68b55d8ec0913b1add1deacf"
+        },
+        "createdAt": "2025-09-01T08:47:10.538Z",
+        "updatedAt": "2025-09-01T08:47:10.538Z"
+      },
+      {
+        "id": "cmf3iai0g000sm64zie07uk2b",
+        "projectId": "cmf3iai070003m64z9kflalgr",
+        "title": "Default onyx interface",
+        "content": "http://localhost:5050/chat?chatId=c41b54b5-5f04-4234-b704-e9fb1db18b63",
+        "url": null,
+        "category": "DOCUMENTATION",
+        "priority": "MEDIUM",
+        "tags": [],
+        "metadata": {
+          "originalMongoId": "68b5f45887a0b2cf796da6cc"
+        },
+        "createdAt": "2025-09-01T19:30:32.877Z",
+        "updatedAt": "2025-09-01T19:30:32.877Z"
+      },
+      {
+        "id": "cmf3iai0h000um64zs23i716s",
+        "projectId": "cmf3iai070003m64z9kflalgr",
+        "title": "Prism AI interface",
+        "content": "http://prism.ai/",
+        "url": null,
+        "category": "DOCUMENTATION",
+        "priority": "MEDIUM",
+        "tags": [],
+        "metadata": {
+          "originalMongoId": "68b5f48f87a0b2cf796da6d2"
+        },
+        "createdAt": "2025-09-01T19:31:27.795Z",
+        "updatedAt": "2025-09-01T19:31:27.795Z"
+      },
+      {
+        "id": "cmf3iai0h000wm64z2z8rlexj",
+        "projectId": "cmf3iai080004m64z17qepguc",
+        "title": "Port Registry & Allocations",
+        "content": "Complete port allocation registry with all services, Docker containers, and available port ranges.\n\nKey ports:\n- 80: Nginx Reverse Proxy\n- 7777: CosmicBoard\n- 8088/9001: Loopify (Segment Loop Master)\n- 3355: Sammuthu Dev Site\n- 9393: Prism AI\n- 5000-5999: Docker/Onyx services\n- 11434: Ollama API\n\nLocation: ~/Projects/nginx-reverse-proxy/docs/port-registry.json",
+        "url": null,
+        "category": "DOCUMENTATION",
+        "priority": "MEDIUM",
+        "tags": [],
+        "metadata": {
+          "originalMongoId": "68b7adaa1ef3b66cb1f31b5f"
+        },
+        "createdAt": "2025-09-03T02:53:30.367Z",
+        "updatedAt": "2025-09-03T02:53:30.367Z"
+      },
+      {
+        "id": "cmf3kq12d0001m6cghr0q3iix",
+        "projectId": "cmf3iai080004m64z17qepguc",
+        "title": "Java syntax highlighting test",
+        "content": "```java\npackage com.segmentloop.controller.segment;\n\nimport com.segmentloop.model.segment.Segment;\nimport com.segmentloop.model.segment.NoteEntry;\nimport com.segmentloop.service.segment.SegmentService;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.http.ResponseEntity;\nimport org.springframework.web.bind.annotation.*;\n\nimport java.net.URLDecoder;\nimport java.nio.charset.StandardCharsets;\nimport java.util.List;\nimport java.util.Map;\nimport java.util.Optional;\n\n@RestController\n@RequestMapping(\"/segment/api\")\n@CrossOrigin(origins = {\"http://localhost:3000\", \"http://localhost:8080\", \"http://localhost:5173\"})\npublic class SegmentController {\n\n    @Autowired\n    private SegmentService segmentService;\n\n    @GetMapping(\"/segments\")\n    public ResponseEntity<List<Segment>> getAllSegments(@RequestParam(required = false) String source_id) {\n        List<Segment> segments;\n\n        if (source_id != null) {\n            try {\n                Integer sourceId = Integer.parseInt(source_id);\n                segments = segmentService.getSegmentsBySourceId(sourceId);\n            } catch (NumberFormatException e) {\n                return ResponseEntity.badRequest().build();\n            }\n        } else {\n            segments = segmentService.getAllSegments();\n        }\n\n        return ResponseEntity.ok(segments);\n    }\n\n    @GetMapping(\"/segments/{segmentPath:.+}\")\n    public ResponseEntity<Segment> getSegment(@PathVariable String segmentPath) {\n        try {\n            String decodedPath = URLDecoder.decode(segmentPath, StandardCharsets.UTF_8);\n            decodedPath = decodedPath.replace(\"%2F\", \"/\");\n\n            Optional<Segment> segment = segmentService.getSegmentByFilepath(decodedPath);\n            return segment.map(ResponseEntity::ok)\n                         .orElse(ResponseEntity.notFound().build());\n        } catch (Exception e) {\n            return ResponseEntity.badRequest().build();\n        }\n    }\n\n    @PostMapping(\"/segments\")\n    public ResponseEntity<Segment> createSegment(@RequestBody Segment segment) {\n        try {\n            Segment createdSegment = segmentService.createSegment(segment);\n            return ResponseEntity.ok(createdSegment);\n        } catch (Exception e) {\n            return ResponseEntity.badRequest().build();\n        }\n    }\n\n    @PutMapping(\"/segments/{segmentPath:.+}\")\n    public ResponseEntity<Segment> updateSegment(@PathVariable String segmentPath, @RequestBody Segment segmentUpdate) {\n        try {\n            String decodedPath = URLDecoder.decode(segmentPath, StandardCharsets.UTF_8);\n            decodedPath = decodedPath.replace(\"%2F\", \"/\");\n\n            Segment updatedSegment = segmentService.updateSegmentByFilepath(decodedPath, segmentUpdate);\n            return ResponseEntity.ok(updatedSegment);\n        } catch (RuntimeException e) {\n            return ResponseEntity.notFound().build();\n        } catch (Exception e) {\n            return ResponseEntity.badRequest().build();\n        }\n    }\n\n    @PostMapping(\"/segments/update\")\n    public ResponseEntity<Segment> updateSegmentSimple(@RequestBody Map<String, Object> updateData) {\n        try {\n            String filepath = (String) updateData.get(\"filepath\");\n            String segmentId = (String) updateData.get(\"_id\");\n\n            if (filepath == null && segmentId == null) {\n                return ResponseEntity.badRequest().build();\n            }\n\n            Segment segmentUpdate = new Segment();\n\n            if (updateData.containsKey(\"play_count\")) {\n                segmentUpdate.setPlayCount((Integer) updateData.get(\"play_count\"));\n            }\n            if (updateData.containsKey(\"last_played\")) {\n                // Handle datetime conversion if needed\n                segmentUpdate.setLastPlayed(null); // TODO: Parse datetime\n            }\n            if (updateData.containsKey(\"note\")) {\n                segmentUpdate.setNote((String) updateData.get(\"note\"));\n            }\n            if (updateData.containsKey(\"starred\")) {\n                segmentUpdate.setStarred((Boolean) updateData.get(\"starred\"));\n            }\n\n            Segment updatedSegment;\n            if (filepath != null) {\n                updatedSegment = segmentService.updateSegmentByFilepath(filepath, segmentUpdate);\n            } else {\n                Optional<Segment> existingSegment = segmentService.getSegmentById(segmentId);\n                if (existingSegment.isPresent()) {\n                    Segment segment = existingSegment.get();\n                    // Apply updates\n                    if (segmentUpdate.getPlayCount() != null) segment.setPlayCount(segmentUpdate.getPlayCount());\n                    if (segmentUpdate.getNote() != null) segment.setNote(segmentUpdate.getNote());\n                    if (segmentUpdate.getStarred() != null) segment.setStarred(segmentUpdate.getStarred());\n\n                    updatedSegment = segmentService.updateSegment(segment);\n                } else {\n                    return ResponseEntity.notFound().build();\n                }\n            }\n\n            return ResponseEntity.ok(updatedSegment);\n        } catch (Exception e) {\n            return ResponseEntity.badRequest().build();\n        }\n    }\n\n    @GetMapping(\"/segments/{segmentPath:.+}/notes\")\n    public ResponseEntity<List<NoteEntry>> getSegmentNotes(@PathVariable String segmentPath) {\n        try {\n            String decodedPath = URLDecoder.decode(segmentPath, StandardCharsets.UTF_8);\n            decodedPath = decodedPath.replace(\"%2F\", \"/\");\n\n            Optional<Segment> segment = segmentService.getSegmentByFilepath(decodedPath);\n            return segment.map(s -> ResponseEntity.ok(s.getNotes()))\n                         .orElse(ResponseEntity.notFound().build());\n        } catch (Exception e) {\n            return ResponseEntity.badRequest().build();\n        }\n    }\n\n    @DeleteMapping(\"/segments/{id}\")\n    public ResponseEntity<Void> deleteSegment(@PathVariable String id) {\n        try {\n            segmentService.deleteSegment(id);\n            return ResponseEntity.noContent().build();\n        } catch (Exception e) {\n            return ResponseEntity.notFound().build();\n        }\n    }\n}\n\n```",
+        "url": null,
+        "category": "SNIPPET",
+        "priority": "MEDIUM",
+        "tags": [],
+        "metadata": {
+          "language": "java"
+        },
+        "createdAt": "2025-09-03T06:05:50.437Z",
+        "updatedAt": "2025-09-03T06:05:50.437Z"
+      },
+      {
+        "id": "cmf3l1ti30003m6cggugtk7wo",
+        "projectId": "cmf3l0iqv0000m6anec4pxlau",
+        "title": "CosmicBoard",
+        "content": "🌌 Core Identity\n\t•\tCosmicBoard\n“Your universal workspace for tasks, ideas, and references — always in sync, always within reach.”\n\n🔑 Value-Focused\n\t•\t“Capture tasks, prompts, code, and knowledge in one place. CosmicBoard keeps everything synced across web and mobile, so your ideas travel with you.”\n\t•\t“The infinite board for your finite focus. Save tasks, links, and references — and return to them anytime, anywhere.”",
+        "url": null,
+        "category": "SNIPPET",
+        "priority": "MEDIUM",
+        "tags": [],
+        "metadata": {},
+        "createdAt": "2025-09-03T06:15:00.507Z",
+        "updatedAt": "2025-09-03T06:15:00.507Z"
+      },
+      {
+        "id": "cmf3l3fos0005m6cgqmhxuhmo",
+        "projectId": "cmf3iai030000m64zq7rnw4v4",
+        "title": "TypeScript Syntax Highlighter test",
+        "content": "```typescript\n'use client'\n\nimport { useEffect, useState } from 'react'\nimport { useRouter } from 'next/navigation'\nimport PrismCard from './PrismCard'\nimport { formatDate, isOverdue } from '@/lib/utils'\nimport { CheckCircle, Clock, Calendar } from 'lucide-react'\nimport { apiClient } from '@/lib/api-client'\n\ninterface Task {\n  _id: string\n  title: string\n  contentHtml?: string\n  dueDate?: string\n  priority: 'LOW' | 'MEDIUM' | 'HIGH'\n  projectId: {\n    id: string\n    name: string\n  } | string\n}\n\nexport default function CurrentPriority() {\n  const router = useRouter()\n  const [task, setTask] = useState<Task | null>(null)\n  const [loading, setLoading] = useState(true)\n\n  const fetchCurrentPriority = async () => {\n    try {\n      const data = await apiClient.get('/current-priority')\n      setTask(data)\n    } catch (error) {\n      console.error('Failed to fetch current priority:', error)\n    } finally {\n      setLoading(false)\n    }\n  }\n\n  useEffect(() => {\n    fetchCurrentPriority()\n  }, [])\n\n  const handleComplete = async () => {\n    if (!task) return\n    \n    try {\n      await apiClient.post(`/tasks/${task._id}/complete`, {})\n      fetchCurrentPriority()\n    } catch (error) {\n      console.error('Failed to complete task:', error)\n    }\n  }\n\n  const handleSnooze = async () => {\n    if (!task) return\n    \n    const tomorrow = new Date()\n    tomorrow.setDate(tomorrow.getDate() + 1)\n    \n    try {\n      await apiClient.put(`/tasks/${task._id}`, { dueDate: tomorrow })\n      fetchCurrentPriority()\n    } catch (error) {\n      console.error('Failed to snooze task:', error)\n    }\n  }\n\n  if (loading) {\n    return (\n      <PrismCard className=\"mb-8\">\n        <div className=\"animate-pulse\">\n          <div className=\"h-6 bg-gray-700 rounded w-1/4 mb-4\"></div>\n          <div className=\"h-8 bg-gray-700 rounded w-3/4\"></div>\n        </div>\n      </PrismCard>\n    )\n  }\n\n  if (!task) {\n    return (\n      <PrismCard className=\"mb-8\">\n        <div className=\"text-center py-8\">\n          <h2 className=\"text-2xl font-bold text-purple-400 mb-2\">All Clear! 🎉</h2>\n          <p className=\"text-gray-400\">No active tasks. Time to create something new!</p>\n        </div>\n      </PrismCard>\n    )\n  }\n\n  const priorityColors = {\n    HIGH: 'bg-red-500/20 text-red-400 border-red-500/50',\n    MEDIUM: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',\n    LOW: 'bg-green-500/20 text-green-400 border-green-500/50'\n  }\n\n  const cosmicPriorityNames = {\n    HIGH: 'Supernova',\n    MEDIUM: 'Stellar',\n    LOW: 'Nebula'\n  }\n\n  // Handle both string and object projectId\n  const projectId = typeof task.projectId === 'string' ? task.projectId : task.projectId.id\n  const projectName = typeof task.projectId === 'string' ? 'Project' : task.projectId.name\n\n  return (\n    <PrismCard className=\"mb-8\">\n      <div className=\"flex items-start justify-between mb-4\">\n        <div>\n          <h2 className=\"text-xl font-bold text-purple-400 mb-2\">🎯 Current Priority</h2>\n          <button\n            onClick={() => router.push(`/projects/${projectId}`)}\n            className=\"inline-flex items-center bg-blue-500/20 text-blue-400 text-sm px-3 py-1 rounded-full hover:bg-blue-500/30 transition-colors\"\n          >\n            {projectName}\n          </button>\n        </div>\n        <span className={`px-3 py-1 rounded-full text-sm font-medium border ${priorityColors[task.priority]}`}>\n          {cosmicPriorityNames[task.priority]}\n        </span>\n      </div>\n      \n      <h3 \n        className=\"text-2xl font-bold text-white mb-4 cursor-pointer hover:text-purple-300 transition-colors\"\n        onClick={() => router.push(`/projects/${projectId}`)}\n      >\n        {task.title}\n      </h3>\n      \n      {task.contentHtml && (\n        <div \n          className=\"text-gray-300 mb-4 prose prose-invert max-w-none\"\n          dangerouslySetInnerHTML={{ __html: task.contentHtml }}\n        />\n      )}\n      \n      {task.dueDate && (\n        <div className={`flex items-center gap-2 mb-6 ${isOverdue(task.dueDate) ? 'text-red-400' : 'text-gray-400'}`}>\n          <Calendar className=\"w-4 h-4\" />\n          <span className=\"text-sm\">Due {formatDate(task.dueDate)}</span>\n        </div>\n      )}\n      \n      <div className=\"flex gap-3\">\n        <button\n          onClick={handleComplete}\n          className=\"flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors\"\n        >\n          <CheckCircle className=\"w-4 h-4\" />\n          Mark Complete\n        </button>\n        <button\n          onClick={handleSnooze}\n          className=\"flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors\"\n        >\n          <Clock className=\"w-4 h-4\" />\n          Snooze 1d\n        </button>\n      </div>\n    </PrismCard>\n  )\n}\n```",
+        "url": null,
+        "category": "SNIPPET",
+        "priority": "MEDIUM",
+        "tags": [],
+        "metadata": {
+          "language": "typescript"
+        },
+        "createdAt": "2025-09-03T06:16:15.916Z",
+        "updatedAt": "2025-09-03T06:16:15.916Z"
+      },
+      {
+        "id": "cmf3raknc0004m6sqxkkenj2e",
+        "projectId": "cmf3r8pej0000m6sqwagacb57",
+        "title": "Shell Script",
+        "content": "#!/bin/bash\n\n# Default duration: 1800 seconds (30 min)\nDURATION=${1:-1800}\n\necho \"Keeping Mac awake for $DURATION seconds in background...\"\n\n# Start caffeinate in background and save its PID\ncaffeinate -i -t \"$DURATION\" &\nCAFFEINATE_PID=$!\n\n# Save the PID to a file so we can stop it later\necho $CAFFEINATE_PID > /tmp/caffeinate_nosleep.pid\n\necho \"caffeinate started with PID $CAFFEINATE_PID\"",
+        "url": null,
+        "category": "SNIPPET",
+        "priority": "MEDIUM",
+        "tags": [],
+        "metadata": null,
+        "createdAt": "2025-09-03T09:09:46.631Z",
+        "updatedAt": "2025-09-03T09:09:46.631Z"
+      },
+      {
+        "id": "cmf9fn2g70006m6vad37ox8rd",
+        "projectId": "cmf9fgqld0002m6va8beg9rgo",
+        "title": "Create Agent from CosmicBoard mobile",
+        "content": "When making changes to mobile (this project) this Web sync agent should also                                                                                                                 │\n│ verify/validate and apply the same changes to web project located in :                                                                                                                       │\n│ /Users/sammuthu/Projects/cosmicboard  ",
+        "url": null,
+        "category": "SNIPPET",
+        "priority": "MEDIUM",
+        "tags": [],
+        "metadata": {},
+        "createdAt": "2025-09-07T08:30:11.240Z",
+        "updatedAt": "2025-09-07T08:30:11.240Z"
+      },
+      {
+        "id": "cmfbqfryb0002m6osnnghpyhj",
+        "projectId": "cmfbqf0ln0000m6os28skps0i",
+        "title": "Web-Mobile Sync Implementation Guide",
+        "content": "# Web-Mobile Sync Implementation Guide\n\n## Overview\nThis guide documents the process and methodology for synchronizing features between the CosmicBoard web application and its mobile counterpart, ensuring complete feature parity and consistent user experience across platforms.\n\n## Implementation Methodology\n\n### 1. Comprehensive Web Analysis Phase\nBefore implementing any mobile feature, conduct a thorough analysis of the web version:\n\n#### A. File Structure Analysis\n- Locate all relevant component files in the web project\n- Identify the component hierarchy and dependencies\n- Map out the data flow and state management patterns\n\n#### B. Feature Breakdown\n- **UI/UX Elements**: Document all visual components, layouts, and interactions\n- **Data Structures**: Extract TypeScript interfaces and data models\n- **API Endpoints**: List all backend API calls and their parameters\n- **Business Logic**: Understand validation rules, data transformations, and workflows\n- **Styling Patterns**: Note color schemes, gradients, animations, and responsive behaviors\n\n### 2. Mobile Adaptation Strategy\n\n#### A. Direct Translation Approach\n- **Component Structure**: Maintain the same component hierarchy as web\n- **Tab Names & Icons**: Use exact same names and emoji icons\n- **Color Themes**: Apply identical gradient patterns and color schemes\n- **Layout Patterns**: Adapt responsive grid layouts to mobile screen sizes\n\n#### B. Platform-Specific Adaptations\n- Replace web-specific libraries with React Native equivalents:\n  - `next/image` → `react-native` Image component\n  - `tailwindcss` → StyleSheet objects\n  - `next/link` → React Navigation\n  - HTML elements → React Native components\n- Adapt interactions for touch:\n  - Hover states → Long press or visible action buttons\n  - Click events → TouchableOpacity\n  - Drag & drop → Gesture handlers\n\n### 3. Implementation Checklist\n\n#### Phase 1: Foundation\n- [ ] Create TypeScript interfaces matching web data models\n- [ ] Add required dependencies to package.json\n- [ ] Set up navigation routes in AppNavigator\n- [ ] Create base screen component with proper props\n\n#### Phase 2: UI Implementation\n- [ ] Implement tab bar with exact naming from web\n- [ ] Create responsive grid layouts\n- [ ] Add empty states with matching icons and messages\n- [ ] Implement loading and error states\n\n#### Phase 3: Core Features\n- [ ] Add CRUD operations (Create, Read, Update, Delete)\n- [ ] Implement data fetching with proper error handling\n- [ ] Add refresh/pull-to-refresh functionality\n- [ ] Create modals and overlays (lightbox, edit forms, etc.)\n\n#### Phase 4: Polish\n- [ ] Apply exact color gradients from web theme\n- [ ] Add animations and transitions\n- [ ] Implement platform-specific optimizations\n- [ ] Test all user interactions\n\n## Media Feature Implementation Example\n\n### Web Version Analysis (from `/Users/sammuthu/Projects/cosmicboard`)\n\n#### Component Structure:\n```\nsrc/components/media/\n├── PhotoGallery.tsx      # 📸 Moments tab\n├── ScreenshotCapture.tsx  # 📎 Snaps tab\n└── PDFViewer.tsx         # 📄 Scrolls tab\n```\n\n#### Key Features Identified:\n1. **Tab System**:\n   - 📸 Moments (Photos) - Blue gradient\n   - 📎 Snaps (Screenshots) - Green gradient\n   - 📄 Scrolls (PDFs) - Red gradient\n\n2. **Photo Gallery Features**:\n   - Grid layout (2-5 columns responsive)\n   - Square aspect ratio cards\n   - Upload area with dashed border\n   - Lightbox with navigation\n   - Inline name editing\n   - Delete with confirmation\n\n3. **API Endpoints**:\n   ```typescript\n   GET    /api/media?projectId=${id}\n   POST   /media/upload\n   POST   /media/screenshot\n   PUT    /media/${id}\n   DELETE /media/${id}\n   ```\n\n### Mobile Implementation (in `/Users/sammuthu/Projects/cosmicboard-mobile`)\n\n#### Created Files:\n- `src/screens/MediaScreen.tsx` - Main media screen with tabs\n- Updated `src/models/index.ts` - Added media interfaces\n- Updated `src/services/api.ts` - Added media API methods\n- Updated `src/navigation/AppNavigator.tsx` - Registered MediaScreen\n\n#### Key Adaptations:\n- Used `FlatList` with `numColumns={2}` for grid layout\n- Replaced hover effects with visible action buttons\n- Used `Modal` component for lightbox\n- Adapted file upload with `expo-image-picker`\n\n## Prompt Template for Future Implementations\n\n### Initial Analysis Prompt:\n```\nI need you to analyze the web version of the [FEATURE_NAME] feature implementation in the CosmicBoard project at /Users/sammuthu/Projects/cosmicboard to understand exactly how it works.\n\nPlease search for and read all [FEATURE]-related files in the web project, focusing on:\n\n1. How the UI components are structured\n2. The complete feature functionality and user flows\n3. All API endpoints used\n4. Data models and TypeScript interfaces\n5. UI/UX patterns and styling (colors, gradients, layouts)\n6. Business logic and validation rules\n7. Error handling and edge cases\n\nI need this information to ensure the mobile version in /Users/sammuthu/Projects/cosmicboard-mobile matches the web version exactly.\n\nReturn a comprehensive analysis of how each component works in the web version, including code snippets of key functionality.\n```\n\n### Implementation Prompt:\n```\nBased on the web version analysis, implement the [FEATURE_NAME] feature in the mobile app at /Users/sammuthu/Projects/cosmicboard-mobile.\n\nRequirements:\n1. Match the web version exactly in terms of functionality and UX\n2. Use the same tab names, icons, and color themes\n3. Implement all CRUD operations with the same API endpoints\n4. Maintain the same data structures and interfaces\n5. Adapt the responsive design for mobile screens\n6. Include all interactive features (edit, delete, view, etc.)\n\nReference the web-mobile-sync-implementation-README.md file for the implementation methodology.\n\nGo through the implementation one step at a time:\n- First, set up the data models and API methods\n- Then create the UI components with proper styling\n- Finally, connect everything with state management and navigation\n\nDo not stop until the mobile version has complete feature parity with the web version.\n```\n\n## Testing Checklist\n\n### Functional Testing\n- [ ] All tabs load and display correctly\n- [ ] Data fetches from backend successfully\n- [ ] Create operations work (upload/add)\n- [ ] Read operations display data properly\n- [ ] Update operations save changes\n- [ ] Delete operations remove items with confirmation\n- [ ] Refresh functionality updates data\n\n### UI/UX Testing\n- [ ] Colors and gradients match web version\n- [ ] Layout adapts to different screen sizes\n- [ ] Touch interactions feel natural\n- [ ] Loading states display correctly\n- [ ] Error messages are user-friendly\n- [ ] Empty states show appropriate messages\n\n### Integration Testing\n- [ ] Navigation between screens works\n- [ ] API calls handle errors gracefully\n- [ ] Data persists across navigation\n- [ ] App handles offline scenarios\n\n## Common Pitfalls to Avoid\n\n1. **Don't forget platform differences**: \n   - Android uses `10.0.2.2` for localhost\n   - iOS uses `localhost` directly\n\n2. **Maintain exact naming**:\n   - Keep the same tab names and icons\n   - Use identical API endpoint paths\n   - Match data field names precisely\n\n3. **Handle React Native limitations**:\n   - No hover states (use visible buttons)\n   - Different image handling\n   - Platform-specific file access\n\n4. **Test incrementally**:\n   - Implement one feature at a time\n   - Test each feature before moving on\n   - Commit working versions frequently\n\n## Version Control Best Practices\n\n1. Create feature branches for each implementation\n2. Commit with descriptive messages\n3. Push working versions before major changes\n4. Use prefixes like \"feat:\", \"fix:\", \"refactor:\"\n\n## Useful Commands\n\n```bash\n# Start development\n./start-android.sh  # For Android\nnpm run ios        # For iOS\n\n# Testing\nnpm run test\nnpm run lint\nnpm run typecheck\n\n# Git workflow\ngit checkout -b feature/[feature-name]\ngit add .\ngit commit -m \"feat: implement [feature] matching web version\"\ngit push origin feature/[feature-name]\n```\n\n## Resources\n\n- Web Project: `/Users/sammuthu/Projects/cosmicboard`\n- Mobile Project: `/Users/sammuthu/Projects/cosmicboard-mobile`\n- Backend Project: `/Users/sammuthu/Projects/cosmicboard-backend`\n- Nginx Config: `/Users/sammuthu/Projects/nginx-reverse-proxy`\n\n## Success Criteria\n\nA feature is considered successfully synchronized when:\n1. ✅ All functionality from web works on mobile\n2. ✅ Visual design matches (adapted for mobile)\n3. ✅ Same data structures and API calls\n4. ✅ Error handling is robust\n5. ✅ Performance is optimized for mobile\n6. ✅ Code follows project conventions\n7. ✅ TypeScript types are properly defined\n8. ✅ No console errors or warnings\n\n---\n\n*Last Updated: 2025-09-07*\n*Guide Version: 1.0.0*",
+        "url": null,
+        "category": "DOCUMENTATION",
+        "priority": "HIGH",
+        "tags": [
+          "guide",
+          "implementation",
+          "web-mobile-sync",
+          "methodology"
+        ],
+        "metadata": {},
+        "createdAt": "2025-09-08T23:07:59.171Z",
+        "updatedAt": "2025-09-08T23:07:59.171Z"
+      }
+    ],
+    "media": [
+      {
+        "id": "cmf812hq80001m6zkzf2psymp",
+        "projectId": "cmf3r8pej0000m6sqwagacb57",
+        "type": "photo",
+        "name": "Test Photo",
+        "originalName": "test.png",
+        "url": "/uploads/photos/cmf3r8pej0000m6sqwagacb57/originals/test_1757148870460_b30cfab18efedd13.png",
+        "thumbnailUrl": "/uploads/thumbnails/thumb_test_1757148870463_f14e2a1a9e7a82c4.png",
+        "size": 70,
+        "mimeType": "image/png",
+        "metadata": {
+          "width": 1,
+          "format": "png",
+          "height": 1,
+          "hasAlpha": true,
+          "colorSpace": "srgb",
+          "storageKey": "photos/cmf3r8pej0000m6sqwagacb57/originals/test_1757148870460_b30cfab18efedd13.png",
+          "storageProvider": "local"
+        },
+        "uploadedBy": null,
+        "createdAt": "2025-09-06T08:54:30.465Z",
+        "updatedAt": "2025-09-06T08:54:30.465Z"
+      },
+      {
+        "id": "cmf85lxfl0001m6bu8cjqr4rs",
+        "projectId": "cmf3l0iqv0000m6anec4pxlau",
+        "type": "photo",
+        "name": "IMG_ED89FECBA31D-1.jpeg",
+        "originalName": "IMG_ED89FECBA31D-1.jpeg",
+        "url": "/uploads/photo/cmf3l0iqv0000m6anec4pxlau/originals/1757156495731_IMG_ED89FECBA31D-1.jpeg",
+        "thumbnailUrl": "/uploads/photo/cmf3l0iqv0000m6anec4pxlau/thumbnails/thumb_1757156495731_IMG_ED89FECBA31D-1.jpeg",
+        "size": 756240,
+        "mimeType": "image/jpeg",
+        "metadata": {
+          "type": "image"
+        },
+        "uploadedBy": null,
+        "createdAt": "2025-09-06T11:01:35.745Z",
+        "updatedAt": "2025-09-06T11:01:35.745Z"
+      },
+      {
+        "id": "cmf85ru8r0003m6bu5aa4dnpa",
+        "projectId": "cmf3l0iqv0000m6anec4pxlau",
+        "type": "pdf",
+        "name": "Sam_Muthu_Updated_One_Pager.pdf",
+        "originalName": "Sam_Muthu_Updated_One_Pager.pdf",
+        "url": "/uploads/pdf/cmf3l0iqv0000m6anec4pxlau/originals/1757156771483_Sam_Muthu_Updated_One_Pager.pdf",
+        "thumbnailUrl": null,
+        "size": 2036,
+        "mimeType": "application/pdf",
+        "metadata": {
+          "type": "pdf"
+        },
+        "uploadedBy": null,
+        "createdAt": "2025-09-06T11:06:11.548Z",
+        "updatedAt": "2025-09-06T11:06:11.548Z"
+      },
+      {
+        "id": "cmf867bxo0001m6gvltq8u9ta",
+        "projectId": "cmf3l0iqv0000m6anec4pxlau",
+        "type": "screenshot",
+        "name": "Screenshot 2025-09-06 04:18:12",
+        "originalName": "Screenshot 2025-09-06 04:18:12",
+        "url": "http://localhost:7779/uploads/screenshot/cmf3l0iqv0000m6anec4pxlau/originals/1757157494308_Screenshot_2025-09-06_04_18_12",
+        "thumbnailUrl": "http://localhost:7779/uploads/screenshot/cmf3l0iqv0000m6anec4pxlau/thumbnails/thumb_1757157494308_Screenshot_2025-09-06_04_18_12",
+        "size": 215853,
+        "mimeType": "image/jpeg",
+        "metadata": {
+          "type": "screenshot",
+          "source": "clipboard"
+        },
+        "uploadedBy": null,
+        "createdAt": "2025-09-06T11:18:14.316Z",
+        "updatedAt": "2025-09-06T11:18:14.316Z"
+      },
+      {
+        "id": "cmf8698mu0003m6gvyiinqgy2",
+        "projectId": "cmf3l0iqv0000m6anec4pxlau",
+        "type": "screenshot",
+        "name": "Screenshot 2025-09-06 04:19:40",
+        "originalName": "Screenshot 2025-09-06 04:19:40",
+        "url": "http://localhost:7779/uploads/screenshot/cmf3l0iqv0000m6anec4pxlau/originals/1757157583343_Screenshot_2025-09-06_04_19_40",
+        "thumbnailUrl": "http://localhost:7779/uploads/screenshot/cmf3l0iqv0000m6anec4pxlau/thumbnails/thumb_1757157583343_Screenshot_2025-09-06_04_19_40",
+        "size": 84932,
+        "mimeType": "image/jpeg",
+        "metadata": {
+          "type": "screenshot",
+          "source": "clipboard"
+        },
+        "uploadedBy": null,
+        "createdAt": "2025-09-06T11:19:43.351Z",
+        "updatedAt": "2025-09-06T11:19:43.351Z"
+      },
+      {
+        "id": "cmfbr83930001m648xls823kl",
+        "projectId": "cmfbqf0ln0000m6os28skps0i",
+        "type": "pdf",
+        "name": "Web-Mobile Sync Implementation Guide",
+        "originalName": "web-mobile-sync-guide.txt",
+        "url": "http://localhost:7779/uploads/pdf/cmfbqf0ln0000m6os28skps0i/originals/1757374200183_web-mobile-sync-guide.txt",
+        "thumbnailUrl": null,
+        "size": 8787,
+        "mimeType": "text/plain",
+        "metadata": {
+          "type": "document",
+          "mimeType": "text/plain",
+          "extension": "txt",
+          "isViewable": true
+        },
+        "uploadedBy": null,
+        "createdAt": "2025-09-08T23:30:00.184Z",
+        "updatedAt": "2025-09-08T23:30:00.184Z"
+      },
+      {
+        "id": "cmfbr88jb0003m648eoaicd9m",
+        "projectId": "cmfbqf0ln0000m6os28skps0i",
+        "type": "pdf",
+        "name": "Package Configuration",
+        "originalName": "package.json",
+        "url": "http://localhost:7779/uploads/pdf/cmfbqf0ln0000m6os28skps0i/originals/1757374207030_package.json",
+        "thumbnailUrl": null,
+        "size": 1548,
+        "mimeType": "application/octet-stream",
+        "metadata": {
+          "type": "document",
+          "mimeType": "application/octet-stream",
+          "extension": "json",
+          "isViewable": true
+        },
+        "uploadedBy": null,
+        "createdAt": "2025-09-08T23:30:07.031Z",
+        "updatedAt": "2025-09-08T23:30:07.031Z"
+      },
+      {
+        "id": "cmfbr8d7j0001m6klh8rc2ncs",
+        "projectId": "cmfbqf0ln0000m6os28skps0i",
+        "type": "pdf",
+        "name": "TypeScript Config",
+        "originalName": "tsconfig.json",
+        "url": "http://localhost:7779/uploads/pdf/cmfbqf0ln0000m6os28skps0i/originals/1757374213086_tsconfig.json",
+        "thumbnailUrl": null,
+        "size": 85,
+        "mimeType": "application/octet-stream",
+        "metadata": {
+          "type": "document",
+          "mimeType": "application/octet-stream",
+          "extension": "json",
+          "isViewable": true
+        },
+        "uploadedBy": null,
+        "createdAt": "2025-09-08T23:30:13.087Z",
+        "updatedAt": "2025-09-08T23:30:13.087Z"
+      },
+      {
+        "id": "cmfbr8hwe0001m6u1mq6n6vny",
+        "projectId": "cmfbqf0ln0000m6os28skps0i",
+        "type": "pdf",
+        "name": "CLAUDE Configuration Guide",
+        "originalName": "CLAUDE.md",
+        "url": "http://localhost:7779/uploads/pdf/cmfbqf0ln0000m6os28skps0i/originals/1757374219165_CLAUDE.md",
+        "thumbnailUrl": null,
+        "size": 2963,
+        "mimeType": "application/octet-stream",
+        "metadata": {
+          "type": "document",
+          "mimeType": "application/octet-stream",
+          "extension": "md",
+          "isViewable": true
+        },
+        "uploadedBy": null,
+        "createdAt": "2025-09-08T23:30:19.166Z",
+        "updatedAt": "2025-09-08T23:30:19.166Z"
+      }
+    ]
+  },
+  "counts": {
+    "projects": 11,
+    "tasks": 6,
+    "references": 15,
+    "media": 9
+  }
+}

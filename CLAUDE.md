@@ -2,6 +2,23 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ⚠️ CRITICAL DATABASE SAFETY RULES
+
+**NEVER use `prisma migrate reset` or any destructive database commands without explicit user consent!**
+
+### Database Management Guidelines:
+1. **Always backup data before migrations**: Use `npx tsx scripts/backup-data.ts`
+2. **Use incremental migrations**: Never reset the database, use `prisma migrate dev` to create new migrations
+3. **Restore data if needed**: Use `npx tsx scripts/restore-data.ts` to restore from backups
+4. **Backup location**: All backups are stored in `/db-backup/` directory (git-versioned)
+
+### Before ANY database schema changes:
+1. Run backup: `npx tsx scripts/backup-data.ts`
+2. Create migration: `npx prisma migrate dev --create-only`
+3. Review migration file before applying
+4. Apply migration: `npx prisma migrate dev`
+5. If issues occur, restore: `npx tsx scripts/restore-data.ts`
+
 ## Project Overview
 
 CosmicBoard Backend - A Node.js/Express API service with PostgreSQL database using Prisma ORM, designed for task and project management with multi-priority support.
