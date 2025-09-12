@@ -1,12 +1,14 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '../server';
+import { prisma } from '../lib/database';
+import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 
 const router = Router();
 
 // GET /api/projects
-router.get('/', async (_req: Request, res: Response) => {
+router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const projects = await prisma.project.findMany({
+      where: { userId: req.user!.id },
       orderBy: { createdAt: 'desc' },
       include: {
         _count: {
@@ -59,7 +61,7 @@ router.get('/', async (_req: Request, res: Response) => {
 });
 
 // POST /api/projects
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { name, description } = req.body;
     
@@ -72,6 +74,7 @@ router.post('/', async (req: Request, res: Response) => {
       data: { 
         name, 
         description,
+        userId: req.user!.id,
         metadata: {} // Initialize with empty JSON object
       }
     });
@@ -90,12 +93,12 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // GET /api/projects/:id
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     
-    const project = await prisma.project.findUnique({
-      where: { id }
+    const project = await prisma.project.findFirst({
+      where: { id, userId: req.user!.id }
     });
     
     if (!project) {
@@ -111,13 +114,13 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // PUT /api/projects/:id
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { name, description } = req.body;
     
     const project = await prisma.project.update({
-      where: { id },
+      where: { id, userId: req.user!.id },
       data: { name, description }
     });
     
@@ -135,12 +138,12 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 // DELETE /api/projects/:id
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     
     await prisma.project.delete({
-      where: { id }
+      where: { id, userId: req.user!.id }
     });
     
     res.json({ message: 'Project deleted successfully' });
@@ -157,9 +160,19 @@ router.delete('/:id', async (req: Request, res: Response) => {
 });
 
 // GET /api/projects/:projectId/tasks
-router.get('/:projectId/tasks', async (req: Request, res: Response) => {
+router.get('/:projectId/tasks', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { projectId } = req.params;
+    
+    // First verify the project belongs to the user
+    const project = await prisma.project.findFirst({
+      where: { id: projectId, userId: req.user!.id }
+    });
+    
+    if (!project) {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
     
     const tasks = await prisma.task.findMany({
       where: { projectId },
@@ -182,9 +195,11 @@ router.post('/:projectId/tasks', async (req: Request, res: Response) => {
     const task = await prisma.task.create({
       data: {
         projectId,
-        content: content || title, // Use content or fallback to title
-        priority,
-        status
+        title: title || content || 'Untitled Task',
+        content: content || title || 'No description',
+        priority: priority as any, // Convert to enum
+        status: status as any,
+        creatorId: 'temp-user-id' // TODO: Get from authenticated user
       }
     });
     
@@ -295,12 +310,12 @@ router.post('/:projectId/references', async (req: Request, res: Response) => {
     const reference = await prisma.reference.create({
       data: {
         projectId,
+        userId: 'temp-user-id', // TODO: Get from authenticated user
         title,
         content,
         category: categoryUpper,
-        priority,
         tags,
-        url
+        language: url ? 'link' : undefined
       }
     });
     

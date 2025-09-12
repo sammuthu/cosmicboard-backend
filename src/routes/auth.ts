@@ -164,7 +164,11 @@ router.patch('/me', authenticate, async (req: AuthRequest, res) => {
 // Logout
 router.post('/logout', authenticate, async (req: AuthRequest, res) => {
   try {
-    await AuthService.logout(req.user!.sessionId);
+    // Get the actual refresh token from the authorization header
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    await AuthService.logout(req.user!.id, token || '');
     res.json({ message: 'Logged out successfully' });
   } catch (error) {
     console.error('Error logging out:', error);

@@ -1,234 +1,139 @@
+/**
+ * Export/Import Routes - STUB VERSION (Media model not in schema)
+ * TODO: Add Media model to Prisma schema to enable full functionality
+ */
+
 import { Router, Request, Response } from 'express';
-import { prisma } from '../server';
+import { prisma } from '../lib/database';
 
 const router = Router();
 
-// GET /api/export - Export all data
-router.get('/export', async (req: Request, res: Response) => {
+// POST /api/export - Export all data (without media for now)
+router.post('/export', async (req: Request, res: Response) => {
   try {
-    // Fetch all data in parallel
-    const [projects, tasks, references, media] = await Promise.all([
+    // Export data without media since Media model doesn't exist
+    const [projects, tasks, references] = await Promise.all([
       prisma.project.findMany({
         orderBy: { createdAt: 'desc' }
       }),
       prisma.task.findMany({
-        include: {
-          project: {
-            select: {
-              id: true,
-              name: true
-            }
-          }
-        },
         orderBy: { createdAt: 'desc' }
       }),
       prisma.reference.findMany({
-        include: {
-          project: {
-            select: {
-              id: true,
-              name: true
-            }
-          }
-        },
-        orderBy: { createdAt: 'desc' }
-      }),
-      prisma.media.findMany({
-        include: {
-          project: {
-            select: {
-              id: true,
-              name: true
-            }
-          }
-        },
         orderBy: { createdAt: 'desc' }
       })
     ]);
-    
-    // Transform for backward compatibility
-    const transformedProjects = projects.map(p => ({
-      ...p,
-      _id: p.id
-    }));
-    
-    const transformedTasks = tasks.map(task => ({
-      ...task,
-      _id: task.id,
-      title: task.content,
-      contentHtml: (task.metadata as any)?.contentHtml || '',
-      tags: (task.metadata as any)?.tags || [],
-      dueDate: (task.metadata as any)?.dueDate || null,
-      projectId: task.projectId,
-      projectName: task.project.name
-    }));
-    
-    const transformedReferences = references.map(ref => ({
-      ...ref,
-      _id: ref.id,
-      projectId: ref.projectId,
-      projectName: ref.project.name
-    }));
-    
-    const transformedMedia = media.map(m => ({
-      ...m,
-      _id: m.id,
-      projectId: m.projectId,
-      projectName: m.project.name
-    }));
-    
+
     const exportData = {
-      version: '2.0.0',
-      exportDate: new Date().toISOString(),
+      version: '1.0.0',
+      timestamp: new Date().toISOString(),
       data: {
-        projects: transformedProjects,
-        tasks: transformedTasks,
-        references: transformedReferences,
-        media: transformedMedia
+        projects,
+        tasks,
+        references
+        // media: [] // TODO: Add when Media model is available
       },
-      stats: {
-        totalProjects: projects.length,
-        totalTasks: tasks.length,
-        totalReferences: references.length,
-        totalMedia: media.length,
-        activeTasks: tasks.filter(t => t.status === 'ACTIVE').length,
-        completedTasks: tasks.filter(t => t.status === 'COMPLETED').length,
-        deletedTasks: tasks.filter(t => t.status === 'DELETED').length
+      counts: {
+        projects: projects.length,
+        tasks: tasks.length,
+        references: references.length,
+        media: 0
       }
     };
-    
-    // Set headers for file download
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename="cosmicboard-export-${Date.now()}.json"`);
-    
+
     res.json(exportData);
   } catch (error) {
-    console.error('GET /api/export error:', error);
+    console.error('Export error:', error);
     res.status(500).json({ error: 'Failed to export data' });
   }
 });
 
-// POST /api/import - Import data
+// POST /api/import - Import data (without media for now)  
 router.post('/import', async (req: Request, res: Response) => {
   try {
-    const importData = req.body;
+    const { data } = req.body;
     
-    if (!importData || !importData.data) {
-      return res.status(400).json({ error: 'Invalid import data format' });
+    if (!data) {
+      return res.status(400).json({ error: 'Import data is required' });
     }
+
+    // Clear existing data (optional, based on import strategy)
+    // For now, just add to existing data
     
-    const { projects = [], tasks = [], references = [], media = [] } = importData.data;
-    
-    // Create a mapping of old IDs to new IDs for projects
-    const projectIdMap = new Map<string, string>();
-    
-    // Import projects first
-    for (const project of projects) {
-      const { _id, id, createdAt, updatedAt, ...projectData } = project;
-      
-      const newProject = await prisma.project.create({
-        data: {
-          ...projectData,
-          createdAt: createdAt ? new Date(createdAt) : undefined,
-          updatedAt: updatedAt ? new Date(updatedAt) : undefined
-        }
-      });
-      
-      // Map old ID to new ID
-      const oldId = _id || id;
-      if (oldId) {
-        projectIdMap.set(oldId, newProject.id);
+    const results = {
+      projects: 0,
+      tasks: 0,
+      references: 0,
+      media: 0
+    };
+
+    // Import projects
+    if (data.projects && Array.isArray(data.projects)) {
+      for (const project of data.projects) {
+        await prisma.project.create({
+          data: {
+            name: project.name,
+            description: project.description,
+            userId: project.userId || 'temp-user-id',
+            archived: project.archived || false,
+            metadata: project.metadata || {}
+          }
+        });
+        results.projects++;
       }
     }
-    
+
     // Import tasks
-    for (const task of tasks) {
-      const { _id, id, title, contentHtml, tags, dueDate, projectId, projectName, createdAt, updatedAt, completedAt, deletedAt, ...taskData } = task;
-      
-      // Get the new project ID from the mapping
-      const newProjectId = typeof projectId === 'string' ? projectIdMap.get(projectId) : null;
-      
-      if (!newProjectId) {
-        console.warn(`Skipping task ${_id || id} - project not found`);
-        continue;
+    if (data.tasks && Array.isArray(data.tasks)) {
+      for (const task of data.tasks) {
+        await prisma.task.create({
+          data: {
+            projectId: task.projectId,
+            title: task.title,
+            content: task.content,
+            priority: task.priority || 'NEBULA',
+            status: task.status || 'ACTIVE',
+            creatorId: task.creatorId || 'temp-user-id',
+            assigneeId: task.assigneeId,
+            tags: task.tags || [],
+            dueDate: task.dueDate ? new Date(task.dueDate) : null,
+            completedAt: task.completedAt ? new Date(task.completedAt) : null,
+            metadata: task.metadata || {}
+          }
+        });
+        results.tasks++;
       }
-      
-      await prisma.task.create({
-        data: {
-          ...taskData,
-          projectId: newProjectId,
-          content: title || taskData.content || 'Untitled Task',
-          metadata: {
-            contentHtml,
-            tags: tags || [],
-            dueDate: dueDate ? new Date(dueDate).toISOString() : null
-          },
-          createdAt: createdAt ? new Date(createdAt) : undefined,
-          updatedAt: updatedAt ? new Date(updatedAt) : undefined,
-          completedAt: completedAt ? new Date(completedAt) : null,
-          deletedAt: deletedAt ? new Date(deletedAt) : null
-        }
-      });
     }
-    
+
     // Import references
-    for (const reference of references) {
-      const { _id, id, projectId, projectName, createdAt, updatedAt, ...refData } = reference;
-      
-      // Get the new project ID from the mapping
-      const newProjectId = typeof projectId === 'string' ? projectIdMap.get(projectId) : null;
-      
-      if (!newProjectId) {
-        console.warn(`Skipping reference ${_id || id} - project not found`);
-        continue;
+    if (data.references && Array.isArray(data.references)) {
+      for (const reference of data.references) {
+        await prisma.reference.create({
+          data: {
+            projectId: reference.projectId,
+            userId: reference.userId || 'temp-user-id',
+            title: reference.title,
+            content: reference.content,
+            category: reference.category || 'DOCUMENTATION',
+            tags: reference.tags || [],
+            language: reference.language,
+            metadata: reference.metadata || {}
+          }
+        });
+        results.references++;
       }
-      
-      await prisma.reference.create({
-        data: {
-          ...refData,
-          projectId: newProjectId,
-          createdAt: createdAt ? new Date(createdAt) : undefined,
-          updatedAt: updatedAt ? new Date(updatedAt) : undefined
-        }
-      });
     }
-    
-    // Import media (if exists in import data)
-    for (const mediaItem of media) {
-      const { _id, id, projectId, projectName, createdAt, updatedAt, ...mediaData } = mediaItem;
-      
-      // Get the new project ID from the mapping
-      const newProjectId = typeof projectId === 'string' ? projectIdMap.get(projectId) : null;
-      
-      if (!newProjectId) {
-        console.warn(`Skipping media ${_id || id} - project not found`);
-        continue;
-      }
-      
-      // Note: Media files themselves need to be uploaded separately
-      // This only imports the metadata
-      await prisma.media.create({
-        data: {
-          ...mediaData,
-          projectId: newProjectId,
-          createdAt: createdAt ? new Date(createdAt) : undefined,
-          updatedAt: updatedAt ? new Date(updatedAt) : undefined
-        }
-      });
-    }
-    
+
+    // TODO: Import media when Media model is available
+
     res.json({
-      success: true,
-      message: 'Data imported successfully',
-      stats: {
-        projectsImported: projects.length,
-        tasksImported: tasks.length,
-        referencesImported: references.length,
-        mediaImported: media.length
-      }
+      message: 'Import completed successfully',
+      results,
+      note: 'Media import not available (Media model not in schema)'
     });
+
   } catch (error) {
-    console.error('POST /api/import error:', error);
+    console.error('Import error:', error);
     res.status(500).json({ error: 'Failed to import data' });
   }
 });

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '../server';
+import { prisma } from '../lib/database';
 
 const router = Router();
 
@@ -51,8 +51,8 @@ router.get('/', async (req: Request, res: Response) => {
         where: {
           OR: [
             { title: { contains: searchQuery, mode: 'insensitive' } },
-            { content: { contains: searchQuery, mode: 'insensitive' } },
-            { url: { contains: searchQuery, mode: 'insensitive' } }
+            { content: { contains: searchQuery, mode: 'insensitive' } }
+            // Note: url is stored in metadata JSON field, would need raw SQL for complex search
           ]
         },
         include: {
@@ -75,7 +75,7 @@ router.get('/', async (req: Request, res: Response) => {
       contentHtml: (task.metadata as any)?.contentHtml || '',
       tags: (task.metadata as any)?.tags || [],
       dueDate: (task.metadata as any)?.dueDate || null,
-      projectId: task.project
+      project: task.project
     }));
     
     // Transform references for backward compatibility

@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '../server';
-import { Priority, Status } from '@prisma/client';
+import { prisma } from '../lib/database';
+import { Priority, TaskStatus } from '@prisma/client';
 
 const router = Router();
 
@@ -25,11 +25,12 @@ router.get('/', async (req: Request, res: Response) => {
     const transformedTasks = tasks.map(task => ({
       ...task,
       _id: task.id,
-      title: task.content, // Using content field as title
+      title: task.title,
+      content: task.content,
       contentHtml: (task.metadata as any)?.contentHtml || '',
-      tags: (task.metadata as any)?.tags || [],
-      dueDate: (task.metadata as any)?.dueDate || null,
-      projectId: task.project // Include the populated project object
+      tags: task.tags,
+      dueDate: task.dueDate,
+      project: task.project // Include the populated project object
     }));
     
     res.json(transformedTasks);
@@ -42,22 +43,26 @@ router.get('/', async (req: Request, res: Response) => {
 // POST /api/tasks
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { projectId, title, contentHtml, dueDate, priority, tags } = req.body;
+    const { projectId, title, contentHtml, dueDate, priority, tags, creatorId } = req.body;
     
-    if (!projectId || !title) {
-      return res.status(400).json({ error: 'Project ID and title are required' });
+    if (!projectId || !title || !creatorId) {
+      return res.status(400).json({ error: 'Project ID, title, and creator ID are required' });
     }
     
     const task = await prisma.task.create({
       data: {
         projectId,
-        content: title, // Store title as content
-        priority: (priority || 'MEDIUM') as Priority,
-        status: 'ACTIVE' as Status,
+        title,
+        content: contentHtml || title, // Store contentHtml as content, fallback to title
+        priority: (priority || 'NEBULA') as Priority,
+        status: 'ACTIVE' as TaskStatus,
+        creatorId,
+        tags: tags || [],
+        dueDate: dueDate ? new Date(dueDate) : null,
         metadata: {
           contentHtml,
-          dueDate: dueDate ? new Date(dueDate).toISOString() : null,
-          tags: tags || []
+          tags: tags || [],
+          dueDate: dueDate ? new Date(dueDate).toISOString() : null
         }
       },
       include: {
@@ -69,11 +74,12 @@ router.post('/', async (req: Request, res: Response) => {
     const transformedTask = {
       ...task,
       _id: task.id,
-      title: task.content,
+      title: task.title,
+      content: task.content,
       contentHtml: (task.metadata as any)?.contentHtml || '',
-      tags: (task.metadata as any)?.tags || [],
-      dueDate: (task.metadata as any)?.dueDate || null,
-      projectId: task.project // Include the populated project object
+      tags: task.tags,
+      dueDate: task.dueDate,
+      project: task.project // Include the populated project object
     };
     
     res.status(201).json(transformedTask);
@@ -86,12 +92,11 @@ router.post('/', async (req: Request, res: Response) => {
 // GET /api/current-priority
 router.get('/current-priority', async (req: Request, res: Response) => {
   try {
-    // Priority order: URGENT > HIGH > MEDIUM > LOW
+    // Priority order: SUPERNOVA > STELLAR > NEBULA
     const priorityOrder = {
-      URGENT: 4,
-      HIGH: 3,
-      MEDIUM: 2,
-      LOW: 1
+      SUPERNOVA: 3,
+      STELLAR: 2,
+      NEBULA: 1
     };
     
     // Find all active tasks
@@ -116,11 +121,11 @@ router.get('/current-priority', async (req: Request, res: Response) => {
       }
       
       // Then sort by dueDate
-      const dueDateA = (a.metadata as any)?.dueDate;
-      const dueDateB = (b.metadata as any)?.dueDate;
+      const dueDateA = a.dueDate;
+      const dueDateB = b.dueDate;
       
       if (dueDateA && dueDateB) {
-        return new Date(dueDateA).getTime() - new Date(dueDateB).getTime();
+        return dueDateA.getTime() - dueDateB.getTime();
       }
       if (dueDateA && !dueDateB) return -1;
       if (!dueDateA && dueDateB) return 1;
@@ -134,10 +139,11 @@ router.get('/current-priority', async (req: Request, res: Response) => {
     const transformedTask = {
       ...topTask,
       _id: topTask.id,
-      title: topTask.content,
+      title: topTask.title,
+      content: topTask.content,
       contentHtml: (topTask.metadata as any)?.contentHtml || '',
-      tags: (topTask.metadata as any)?.tags || [],
-      dueDate: (topTask.metadata as any)?.dueDate || null,
+      tags: topTask.tags,
+      dueDate: topTask.dueDate,
       projectId: topTask.project // Include the populated project object
     };
     
@@ -202,11 +208,12 @@ router.get('/:id', async (req: Request, res: Response) => {
     const transformedTask = {
       ...task,
       _id: task.id,
-      title: task.content,
+      title: task.title,
+      content: task.content,
       contentHtml: (task.metadata as any)?.contentHtml || '',
-      tags: (task.metadata as any)?.tags || [],
-      dueDate: (task.metadata as any)?.dueDate || null,
-      projectId: task.project // Include the populated project object
+      tags: task.tags,
+      dueDate: task.dueDate,
+      project: task.project // Include the populated project object
     };
     
     res.json(transformedTask);
@@ -224,7 +231,10 @@ router.put('/:id', async (req: Request, res: Response) => {
     
     const updateData: any = {};
     
-    if (title !== undefined) updateData.content = title;
+    if (title !== undefined) {
+      updateData.title = title;
+      updateData.content = contentHtml || title;
+    }
     if (priority !== undefined) updateData.priority = priority;
     
     // Update metadata
@@ -234,9 +244,18 @@ router.put('/:id', async (req: Request, res: Response) => {
     }
     
     const metadata = existingTask.metadata as any || {};
-    if (contentHtml !== undefined) metadata.contentHtml = contentHtml;
-    if (tags !== undefined) metadata.tags = tags;
-    if (dueDate !== undefined) metadata.dueDate = dueDate ? new Date(dueDate).toISOString() : null;
+    if (contentHtml !== undefined) {
+      metadata.contentHtml = contentHtml;
+      updateData.content = contentHtml;
+    }
+    if (tags !== undefined) {
+      metadata.tags = tags;
+      updateData.tags = tags;
+    }
+    if (dueDate !== undefined) {
+      metadata.dueDate = dueDate ? new Date(dueDate).toISOString() : null;
+      updateData.dueDate = dueDate ? new Date(dueDate) : null;
+    }
     
     updateData.metadata = metadata;
     
@@ -251,11 +270,12 @@ router.put('/:id', async (req: Request, res: Response) => {
     const transformedTask = {
       ...task,
       _id: task.id,
-      title: task.content,
+      title: task.title,
+      content: task.content,
       contentHtml: metadata.contentHtml || '',
-      tags: metadata.tags || [],
-      dueDate: metadata.dueDate || null,
-      projectId: task.project // Include the populated project object
+      tags: task.tags,
+      dueDate: task.dueDate,
+      project: task.project // Include the populated project object
     };
     
     res.json(transformedTask);
@@ -281,7 +301,7 @@ router.post('/:id/complete', async (req: Request, res: Response) => {
       }
     });
     
-    res.json({ ...task, _id: task.id, projectId: task.project });
+    res.json({ ...task, _id: task.id, project: task.project });
   } catch (error: any) {
     console.error('POST /api/tasks/:id/complete error:', error);
     
@@ -301,15 +321,14 @@ router.delete('/:id/delete', async (req: Request, res: Response) => {
     const task = await prisma.task.update({
       where: { id },
       data: {
-        status: 'DELETED',
-        deletedAt: new Date()
+        status: 'DELETED'
       },
       include: {
         project: true
       }
     });
     
-    res.json({ ...task, _id: task.id, projectId: task.project });
+    res.json({ ...task, _id: task.id, project: task.project });
   } catch (error: any) {
     console.error('DELETE /api/tasks/:id/delete error:', error);
     
@@ -329,15 +348,14 @@ router.post('/:id/restore', async (req: Request, res: Response) => {
     const task = await prisma.task.update({
       where: { id },
       data: {
-        status: 'ACTIVE',
-        deletedAt: null
+        status: 'ACTIVE'
       },
       include: {
         project: true
       }
     });
     
-    res.json({ ...task, _id: task.id, projectId: task.project });
+    res.json({ ...task, _id: task.id, project: task.project });
   } catch (error: any) {
     console.error('POST /api/tasks/:id/restore error:', error);
     

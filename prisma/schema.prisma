@@ -7,366 +7,190 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ==================== USER & AUTH MODELS ====================
-
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  phone         String?   @unique
-  name          String?
-  username      String?   @unique
-  avatar        String?
-  bio           String?
-  emailVerified DateTime?
-  phoneVerified DateTime?
-  lastLogin     DateTime?
-  isActive      Boolean   @default(true)
-  metadata      Json?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  // Relations
-  authMethods      AuthMethod[]
-  sessions         Session[]
-  ownedProjects    Project[]         @relation("ProjectOwner")
-  projectMembers   ProjectMember[]
-  sentInvites      ProjectInvite[]   @relation("InviteSender")
-  receivedInvites  ProjectInvite[]   @relation("InviteRecipient")
-  connections      Connection[]      @relation("ConnectionFrom")
-  connectedTo      Connection[]      @relation("ConnectionTo")
-  notifications    Notification[]
-  activities       Activity[]
-  magicLinks       MagicLink[]
-  mediaUploads     Media[]
+  id                         String         @id @default(cuid())
+  email                      String         @unique
+  name                       String
+  avatar                     String?
+  createdAt                  DateTime       @default(now())
+  updatedAt                  DateTime       @updatedAt
+  username                   String?
+  phone                      String?
+  bio                        String?
+  emailVerified              DateTime?
+  phoneVerified              DateTime?
+  lastLogin                  DateTime?
+  isActive                   Boolean?       @default(true)
+  metadata                   Json?
+  authMethods                AuthMethod[]
+  magicLinks                 MagicLink[]
+  Project                    Project[]
+  Reference                  Reference[]
+  RefreshToken               RefreshToken[]
+  Subscription               Subscription?
+  Task_Task_assigneeIdToUser Task[]         @relation("Task_assigneeIdToUser")
+  Task_Task_creatorIdToUser  Task[]         @relation("Task_creatorIdToUser")
 
   @@index([email])
-  @@index([phone])
-  @@index([username])
-  @@index([createdAt])
 }
 
 model AuthMethod {
-  id         String         @id @default(cuid())
-  userId     String
-  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  provider   AuthProvider
-  providerId String?        // For OAuth providers
-  metadata   Json?          // Store provider-specific data
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+  id           String   @id @default(dbgenerated("(gen_random_uuid())::text"))
+  userId       String
+  provider     String
+  providerId   String?
+  email        String?
+  phone        String?
+  passwordHash String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now()) @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
-  @@unique([provider, providerId])
-  @@index([userId])
+  @@unique([userId, provider, providerId])
 }
 
 model MagicLink {
-  id        String    @id @default(cuid())
-  userId    String?
-  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String    @id @default(dbgenerated("(gen_random_uuid())::text"))
+  userId    String
   email     String
   token     String    @unique
-  code      String?   // Optional 6-digit code for mobile
+  code      String
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime  @default(now())
-
-  @@index([email])
-  @@index([token])
-  @@index([code])
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
-
-model Session {
-  id           String    @id @default(cuid())
-  userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token        String    @unique
-  refreshToken String?   @unique
-  deviceInfo   Json?     // Store device/browser info
-  ipAddress    String?
-  expiresAt    DateTime
-  lastActive   DateTime  @default(now())
-  createdAt    DateTime  @default(now())
-
-  @@index([userId])
-  @@index([token])
-  @@index([refreshToken])
-}
-
-// ==================== NETWORK & CONNECTIONS ====================
-
-model Connection {
-  id          String           @id @default(cuid())
-  fromUserId  String
-  fromUser    User             @relation("ConnectionFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
-  toUserId    String
-  toUser      User             @relation("ConnectionTo", fields: [toUserId], references: [id], onDelete: Cascade)
-  status      ConnectionStatus @default(PENDING)
-  message     String?
-  acceptedAt  DateTime?
-  rejectedAt  DateTime?
-  blockedAt   DateTime?
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-
-  @@unique([fromUserId, toUserId])
-  @@index([fromUserId, status])
-  @@index([toUserId, status])
-}
-
-// ==================== PROJECT & COLLABORATION ====================
 
 model Project {
-  id          String            @id @default(cuid())
+  id          String      @id @default(cuid())
   name        String
   description String?
-  ownerId     String?           // Make nullable initially for migration
-  owner       User?             @relation("ProjectOwner", fields: [ownerId], references: [id])
-  visibility  ProjectVisibility @default(PRIVATE)
-  settings    Json?             // Project-specific settings
+  userId      String
+  archived    Boolean     @default(false)
   metadata    Json?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-
-  // Relations
-  members     ProjectMember[]
-  invites     ProjectInvite[]
-  media       Media[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  User        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   references  Reference[]
   tasks       Task[]
-  activities  Activity[]
 
-  @@unique([name, ownerId])
-  @@index([ownerId])
-  @@index([visibility])
-  @@index([createdAt])
-  @@index([name])
-}
-
-model ProjectMember {
-  id        String      @id @default(cuid())
-  projectId String
-  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role      ProjectRole @default(VIEWER)
-  joinedAt  DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-
-  @@unique([projectId, userId])
-  @@index([projectId])
+  @@index([archived])
   @@index([userId])
 }
-
-model ProjectInvite {
-  id           String        @id @default(cuid())
-  projectId    String
-  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  senderId     String
-  sender       User          @relation("InviteSender", fields: [senderId], references: [id])
-  recipientId  String?
-  recipient    User?         @relation("InviteRecipient", fields: [recipientId], references: [id])
-  email        String?       // For inviting non-users
-  phone        String?       // For inviting via phone
-  role         ProjectRole   @default(VIEWER)
-  token        String        @unique
-  status       InviteStatus  @default(PENDING)
-  message      String?
-  expiresAt    DateTime
-  acceptedAt   DateTime?
-  rejectedAt   DateTime?
-  createdAt    DateTime      @default(now())
-
-  @@index([projectId])
-  @@index([email])
-  @@index([phone])
-  @@index([token])
-}
-
-// ==================== NOTIFICATIONS & ACTIVITY ====================
-
-model Notification {
-  id         String             @id @default(cuid())
-  userId     String
-  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type       NotificationType
-  title      String
-  message    String
-  data       Json?              // Additional data for the notification
-  read       Boolean            @default(false)
-  readAt     DateTime?
-  createdAt  DateTime           @default(now())
-
-  @@index([userId, read])
-  @@index([createdAt])
-}
-
-model Activity {
-  id         String       @id @default(cuid())
-  userId     String
-  user       User         @relation(fields: [userId], references: [id])
-  projectId  String?
-  project    Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  type       ActivityType
-  entityType String       // 'task', 'reference', 'media', 'project', etc.
-  entityId   String
-  data       Json?        // Store activity-specific data
-  createdAt  DateTime     @default(now())
-
-  @@index([userId])
-  @@index([projectId])
-  @@index([entityType, entityId])
-  @@index([createdAt])
-}
-
-// ==================== EXISTING MODELS ====================
 
 model Task {
-  id          String    @id @default(cuid())
-  projectId   String
-  content     String
-  priority    Priority  @default(MEDIUM)
-  status      Status    @default(ACTIVE)
-  completedAt DateTime?
-  deletedAt   DateTime?
-  metadata    Json?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id                         String     @id @default(cuid())
+  projectId                  String
+  title                      String
+  content                    String
+  priority                   Priority   @default(NEBULA)
+  status                     TaskStatus @default(ACTIVE)
+  tags                       String[]
+  dueDate                    DateTime?
+  completedAt                DateTime?
+  creatorId                  String
+  assigneeId                 String?
+  metadata                   Json?
+  createdAt                  DateTime   @default(now())
+  updatedAt                  DateTime   @updatedAt
+  User_Task_assigneeIdToUser User?      @relation("Task_assigneeIdToUser", fields: [assigneeId], references: [id])
+  User_Task_creatorIdToUser  User       @relation("Task_creatorIdToUser", fields: [creatorId], references: [id])
+  project                    Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  @@index([projectId, status])
   @@index([status])
   @@index([priority])
-  @@index([createdAt])
+  @@index([assigneeId])
+  @@index([creatorId])
+  @@index([projectId])
 }
 
 model Reference {
-  id        String   @id @default(cuid())
+  id        String            @id @default(cuid())
   projectId String
+  userId    String
   title     String
   content   String
-  url       String?
-  category  Category @default(DOCUMENTATION)
-  priority  Priority @default(MEDIUM)
+  category  ReferenceCategory
   tags      String[]
+  language  String?
   metadata  Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  project   Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  User      User              @relation(fields: [userId], references: [id])
 
-  @@index([projectId, category])
   @@index([category])
-  @@index([tags])
+  @@index([projectId])
+  @@index([userId])
+}
+
+model ActivityLog {
+  id         String   @id
+  userId     String
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
+  @@index([userId])
+}
+
+model RefreshToken {
+  id        String   @id
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+model Subscription {
+  id                   String             @id
+  userId               String             @unique
+  status               SubscriptionStatus @default(FREE)
+  stripeCustomerId     String?            @unique
+  stripeSubscriptionId String?            @unique
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime
+  User                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([stripeCustomerId])
+  @@index([userId])
 }
 
 enum Priority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
+  SUPERNOVA
+  STELLAR
+  NEBULA
 }
 
-enum Status {
+enum ReferenceCategory {
+  SNIPPET
+  DOCUMENTATION
+  LINK
+  NOTE
+}
+
+enum SubscriptionStatus {
+  FREE
+  PRO
+  ENTERPRISE
+  CANCELLED
+}
+
+enum TaskStatus {
   ACTIVE
   COMPLETED
   DELETED
-}
-
-enum Category {
-  DOCUMENTATION
-  SNIPPET
-  CONFIGURATION
-  TOOLS
-  API
-  TUTORIAL
-  REFERENCE
-}
-
-model Media {
-  id           String    @id @default(cuid())
-  projectId    String
-  type         MediaType
-  name         String
-  originalName String
-  url          String
-  thumbnailUrl String?
-  size         Int
-  mimeType     String
-  metadata     Json?
-  uploadedBy   String?
-  uploadedUser User?     @relation(fields: [uploadedBy], references: [id])
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  project      Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@index([type])
-  @@index([createdAt])
-  @@index([projectId, type])
-  @@index([uploadedBy])
-}
-
-enum MediaType {
-  photo
-  screenshot
-  pdf
-}
-
-// ==================== AUTH ENUMS ====================
-
-enum AuthProvider {
-  EMAIL
-  PHONE
-  GOOGLE
-  GITHUB
-  APPLE
-  PASSKEY
-}
-
-enum ConnectionStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
-  BLOCKED
-}
-
-enum ProjectVisibility {
-  PRIVATE     // Only owner and members can see
-  NETWORK     // Connections can see
-  PUBLIC      // Anyone can see
-}
-
-enum ProjectRole {
-  OWNER
-  ADMIN
-  EDITOR
-  VIEWER
-}
-
-enum InviteStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
-  EXPIRED
-}
-
-enum NotificationType {
-  CONNECTION_REQUEST
-  CONNECTION_ACCEPTED
-  PROJECT_INVITE
-  PROJECT_SHARED
-  TASK_ASSIGNED
-  COMMENT_ADDED
-  MENTION
-  SYSTEM
-}
-
-enum ActivityType {
-  PROJECT_CREATED
-  PROJECT_UPDATED
-  PROJECT_SHARED
-  TASK_CREATED
-  TASK_COMPLETED
-  REFERENCE_ADDED
-  MEDIA_UPLOADED
-  MEMBER_JOINED
-  MEMBER_LEFT
+  ARCHIVED
 }

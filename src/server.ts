@@ -1,8 +1,8 @@
 import express, { Application } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
 import { config, getCorsConfig, validateEnvironment } from './config/environment';
+import { prisma } from './lib/database';
 
 // Load environment variables
 dotenv.config();
@@ -12,11 +12,6 @@ validateEnvironment();
 
 const app: Application = express();
 const PORT = config.port;
-
-// Initialize Prisma
-export const prisma = new PrismaClient({
-  log: config.database.logging ? ['query', 'error', 'warn'] : ['error'],
-});
 
 // Middleware
 app.use(cors(getCorsConfig()));

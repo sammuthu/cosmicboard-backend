@@ -1,15 +1,8 @@
-import { PrismaClient, User, AuthProvider } from '@prisma/client';
-import jwt from 'jsonwebtoken';
+import { PrismaClient, User } from '@prisma/client';
 import crypto from 'crypto';
-import nodemailer from 'nodemailer';
+import { EmailService } from './email.service';
 
 const prisma = new PrismaClient();
-
-interface TokenPayload {
-  userId: string;
-  email: string;
-  sessionId: string;
-}
 
 interface AuthTokens {
   accessToken: string;
@@ -17,45 +10,42 @@ interface AuthTokens {
   expiresIn: number;
 }
 
+// In-memory storage for access tokens (in production, use Redis or JWT)
+const accessTokenStore = new Map<string, { userId: string; email: string; expiresAt: Date }>();
+
 export class AuthService {
-  private static jwtSecret = process.env.JWT_SECRET || 'cosmic-secret-key-change-in-production';
-  private static refreshSecret = process.env.JWT_REFRESH_SECRET || 'cosmic-refresh-secret-change-in-production';
-  private static accessTokenExpiry = '15m';
-  private static refreshTokenExpiry = '7d';
   private static magicLinkExpiry = 15 * 60 * 1000; // 15 minutes
 
-  private static transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
-
-  static generateTokens(payload: TokenPayload): AuthTokens {
-    const accessToken = jwt.sign(payload, this.jwtSecret, {
-      expiresIn: this.accessTokenExpiry,
-    } as jwt.SignOptions);
-
-    const refreshToken = jwt.sign(payload, this.refreshSecret, {
-      expiresIn: this.refreshTokenExpiry,
-    } as jwt.SignOptions);
-
+  static generateTokens(userId: string, email: string): AuthTokens {
+    // Simple token generation without JWT for now
+    const accessToken = crypto.randomBytes(32).toString('hex');
+    const refreshToken = crypto.randomBytes(32).toString('hex');
+    const expiresIn = 15 * 60; // 15 minutes in seconds
+    
+    // Store access token in memory
+    accessTokenStore.set(accessToken, {
+      userId,
+      email,
+      expiresAt: new Date(Date.now() + expiresIn * 1000)
+    });
+    
     return {
       accessToken,
       refreshToken,
-      expiresIn: 15 * 60, // 15 minutes in seconds
+      expiresIn,
     };
   }
 
-  static verifyAccessToken(token: string): TokenPayload {
-    return jwt.verify(token, this.jwtSecret) as TokenPayload;
-  }
-
-  static verifyRefreshToken(token: string): TokenPayload {
-    return jwt.verify(token, this.refreshSecret) as TokenPayload;
+  static validateAccessToken(token: string): { userId: string; email: string } | null {
+    const tokenData = accessTokenStore.get(token);
+    if (!tokenData) return null;
+    
+    if (tokenData.expiresAt < new Date()) {
+      accessTokenStore.delete(token);
+      return null;
+    }
+    
+    return { userId: tokenData.userId, email: tokenData.email };
   }
 
   static async sendMagicLink(email: string, isSignup: boolean = false): Promise<{ success: boolean; message: string }> {
@@ -69,7 +59,7 @@ export class AuthService {
       if (isSignup && user) {
         return {
           success: false,
-          message: 'User already exists with this email',
+          message: 'User already exists. Please use login instead.',
         };
       }
 
@@ -78,6 +68,7 @@ export class AuthService {
         user = await prisma.user.create({
           data: {
             email,
+            name: email.split('@')[0], // Extract name from email
             isActive: true,
           },
         });
@@ -86,16 +77,17 @@ export class AuthService {
         await prisma.authMethod.create({
           data: {
             userId: user.id,
-            provider: AuthProvider.EMAIL,
+            provider: 'EMAIL',
+            email: email,
           },
         });
       }
 
       // Generate magic link token
       const token = crypto.randomBytes(32).toString('hex');
-      const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit code
+      const code = crypto.randomInt(100000, 999999).toString(); // 6-digit code
 
-      // Save magic link
+      // Store magic link
       await prisma.magicLink.create({
         data: {
           userId: user.id,
@@ -109,42 +101,8 @@ export class AuthService {
       // Send email
       const magicLinkUrl = `${process.env.FRONTEND_URL || 'http://localhost:7777'}/auth?token=${token}`;
       
-      // For development, log the magic link. But send email if explicitly enabled
-      const shouldSendEmail = process.env.ENABLE_EMAIL_SENDING === 'true' || process.env.NODE_ENV === 'production';
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log('\n===========================================');
-        console.log('🔐 MAGIC LINK (Development Mode)');
-        console.log('===========================================');
-        console.log(`Email: ${email}`);
-        console.log(`Magic Link: ${magicLinkUrl}`);
-        console.log(`Code: ${code}`);
-        console.log('===========================================\n');
-      }
-      
-      if (shouldSendEmail && process.env.SMTP_USER && process.env.SMTP_PASS) {
-        await this.transporter.sendMail({
-          from: process.env.SMTP_FROM || '"CosmicSpace" <noreply@cosmicspace.app>',
-          to: email,
-          subject: 'Your CosmicSpace Magic Link',
-          html: `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #333;">Welcome to CosmicSpace! 🚀</h2>
-              <p>Click the link below to sign in to your account:</p>
-              <a href="${magicLinkUrl}" style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 8px; margin: 16px 0;">
-                Sign In to CosmicSpace
-              </a>
-              <p>Or use this code in the app: <strong style="font-size: 24px; letter-spacing: 2px;">${code}</strong></p>
-              <p style="color: #666; font-size: 14px;">This link will expire in 15 minutes. If you didn't request this, please ignore this email.</p>
-            </div>
-          `,
-        });
-        console.log(`✅ Email sent successfully to ${email}`);
-      } else if (!shouldSendEmail) {
-        console.log('📧 Email sending disabled in development mode. Set ENABLE_EMAIL_SENDING=true to send emails.');
-      } else {
-        console.log('⚠️ Email not sent: SMTP credentials not configured');
-      }
+      // Send the magic link email
+      await EmailService.sendMagicLinkEmail(email, magicLinkUrl, code);
 
       return {
         success: true,
@@ -161,12 +119,16 @@ export class AuthService {
 
   static async verifyMagicLink(token: string): Promise<{ success: boolean; user?: User; tokens?: AuthTokens; message?: string }> {
     try {
+      console.log('🔍 Verifying magic link with token:', token);
+      
+      // Find and verify magic link
       const magicLink = await prisma.magicLink.findUnique({
         where: { token },
         include: { user: true },
       });
 
-      if (!magicLink || !magicLink.user) {
+      if (!magicLink) {
+        console.log('❌ Magic link not found for token:', token);
         return {
           success: false,
           message: 'Invalid or expired magic link',
@@ -174,16 +136,18 @@ export class AuthService {
       }
 
       if (magicLink.expiresAt < new Date()) {
+        console.log('❌ Magic link expired:', magicLink.expiresAt);
         return {
           success: false,
-          message: 'Magic link has expired',
+          message: 'Invalid or expired magic link',
         };
       }
 
       if (magicLink.usedAt) {
+        console.log('❌ Magic link already used:', magicLink.usedAt);
         return {
           success: false,
-          message: 'Magic link has already been used',
+          message: 'Invalid or expired magic link',
         };
       }
 
@@ -199,31 +163,27 @@ export class AuthService {
         data: { lastLogin: new Date() },
       });
 
-      // Create session
-      const session = await prisma.session.create({
+      // Generate tokens
+      const tokens = this.generateTokens(
+        magicLink.user.id,
+        magicLink.user.email
+      );
+
+      console.log('✅ Generated tokens for user:', magicLink.user.email);
+      console.log('   Access token:', tokens.accessToken);
+      console.log('   Expires in:', tokens.expiresIn, 'seconds');
+
+      // Store refresh token
+      await prisma.refreshToken.create({
         data: {
+          id: crypto.randomUUID(),
+          token: tokens.refreshToken,
           userId: magicLink.user.id,
-          token: crypto.randomBytes(32).toString('hex'),
-          refreshToken: crypto.randomBytes(32).toString('hex'),
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
         },
       });
 
-      // Generate JWT tokens
-      const tokens = this.generateTokens({
-        userId: magicLink.user.id,
-        email: magicLink.user.email,
-        sessionId: session.id,
-      });
-
-      // Update session with JWT tokens
-      await prisma.session.update({
-        where: { id: session.id },
-        data: {
-          token: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-        },
-      });
+      console.log('✅ Magic link verified successfully for:', magicLink.user.email);
 
       return {
         success: true,
@@ -241,6 +201,7 @@ export class AuthService {
 
   static async verifyMagicCode(email: string, code: string): Promise<{ success: boolean; user?: User; tokens?: AuthTokens; message?: string }> {
     try {
+      // Find and verify magic link by email and code
       const magicLink = await prisma.magicLink.findFirst({
         where: {
           email,
@@ -251,7 +212,7 @@ export class AuthService {
         include: { user: true },
       });
 
-      if (!magicLink || !magicLink.user) {
+      if (!magicLink) {
         return {
           success: false,
           message: 'Invalid or expired code',
@@ -270,31 +231,27 @@ export class AuthService {
         data: { lastLogin: new Date() },
       });
 
-      // Create session
-      const session = await prisma.session.create({
+      // Generate tokens
+      const tokens = this.generateTokens(
+        magicLink.user.id,
+        magicLink.user.email
+      );
+
+      console.log('✅ Generated tokens for user:', magicLink.user.email);
+      console.log('   Access token:', tokens.accessToken);
+      console.log('   Expires in:', tokens.expiresIn, 'seconds');
+
+      // Store refresh token
+      await prisma.refreshToken.create({
         data: {
+          id: crypto.randomUUID(),
+          token: tokens.refreshToken,
           userId: magicLink.user.id,
-          token: crypto.randomBytes(32).toString('hex'),
-          refreshToken: crypto.randomBytes(32).toString('hex'),
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
         },
       });
 
-      // Generate JWT tokens
-      const tokens = this.generateTokens({
-        userId: magicLink.user.id,
-        email: magicLink.user.email,
-        sessionId: session.id,
-      });
-
-      // Update session with JWT tokens
-      await prisma.session.update({
-        where: { id: session.id },
-        data: {
-          token: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-        },
-      });
+      console.log('✅ Magic link verified successfully for:', magicLink.user.email);
 
       return {
         success: true,
@@ -312,18 +269,15 @@ export class AuthService {
 
   static async refreshTokens(refreshToken: string): Promise<{ success: boolean; tokens?: AuthTokens; message?: string }> {
     try {
-      const payload = this.verifyRefreshToken(refreshToken);
-
-      const session = await prisma.session.findFirst({
+      const tokenRecord = await prisma.refreshToken.findFirst({
         where: {
-          id: payload.sessionId,
-          refreshToken,
+          token: refreshToken,
           expiresAt: { gt: new Date() },
         },
-        include: { user: true },
+        include: { User: true },
       });
 
-      if (!session) {
+      if (!tokenRecord) {
         return {
           success: false,
           message: 'Invalid or expired refresh token',
@@ -331,19 +285,16 @@ export class AuthService {
       }
 
       // Generate new tokens
-      const tokens = this.generateTokens({
-        userId: session.user.id,
-        email: session.user.email,
-        sessionId: session.id,
-      });
+      const tokens = this.generateTokens(
+        tokenRecord.User.id,
+        tokenRecord.User.email
+      );
 
-      // Update session with new tokens
-      await prisma.session.update({
-        where: { id: session.id },
+      // Update refresh token
+      await prisma.refreshToken.update({
+        where: { id: tokenRecord.id },
         data: {
-          token: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-          lastActive: new Date(),
+          token: tokens.refreshToken,
         },
       });
 
@@ -360,10 +311,13 @@ export class AuthService {
     }
   }
 
-  static async logout(sessionId: string): Promise<{ success: boolean }> {
+  static async logout(userId: string, refreshToken: string): Promise<{ success: boolean }> {
     try {
-      await prisma.session.delete({
-        where: { id: sessionId },
+      await prisma.refreshToken.deleteMany({
+        where: { 
+          userId,
+          token: refreshToken,
+        },
       });
 
       return { success: true };
@@ -377,6 +331,13 @@ export class AuthService {
     return prisma.user.findUnique({
       where: { id: userId },
     });
+  }
+
+  static async getUserByToken(token: string): Promise<User | null> {
+    // For this simple implementation, we'll store user sessions in memory or use a simple approach
+    // In production, you'd want to use proper JWT validation or database session lookup
+    // For now, let's return null and handle this at the middleware level
+    return null;
   }
 
   static async updateUser(userId: string, data: { name?: string; username?: string; bio?: string; avatar?: string }): Promise<User> {

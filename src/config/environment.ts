@@ -75,7 +75,7 @@ const configs: Record<Environment, EnvironmentConfig> = {
       logging: true
     },
     storage: {
-      type: 'local',
+      type: (process.env.STORAGE_TYPE as 'local' | 's3' | 'cloudinary') || 'local',
       uploadDir: process.env.UPLOAD_DIR || './uploads',
       maxFileSize: parseInt(process.env.MAX_FILE_SIZE_MB || '50') * 1024 * 1024, // Convert MB to bytes
       allowedImageTypes: (process.env.ALLOWED_IMAGE_TYPES || 'jpg,jpeg,png,gif,webp').split(','),
@@ -84,6 +84,12 @@ const configs: Record<Environment, EnvironmentConfig> = {
         width: parseInt(process.env.THUMBNAIL_WIDTH || '200'),
         height: parseInt(process.env.THUMBNAIL_HEIGHT || '200')
       }
+    },
+    aws: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      region: process.env.AWS_REGION || 'us-east-1',
+      bucketName: process.env.AWS_S3_BUCKET
     },
     features: {
       authentication: false,

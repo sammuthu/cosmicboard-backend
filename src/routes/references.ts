@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '../server';
-import { Priority, Category } from '@prisma/client';
+import { prisma } from '../lib/database';
+import { ReferenceCategory } from '@prisma/client';
 
 const router = Router();
 
@@ -50,29 +50,28 @@ router.post('/', async (req: Request, res: Response) => {
     }
     
     // Map category string to enum value
-    const categoryMap: { [key: string]: Category } = {
+    const categoryMap: { [key: string]: ReferenceCategory } = {
       'documentation': 'DOCUMENTATION',
       'snippet': 'SNIPPET',
-      'configuration': 'CONFIGURATION',
-      'tools': 'TOOLS',
-      'api': 'API',
-      'tutorial': 'TUTORIAL',
-      'reference': 'REFERENCE',
+      'link': 'LINK',
+      'note': 'NOTE',
       'prompt': 'SNIPPET', // Map prompt to SNIPPET
-      'link': 'REFERENCE', // Map link to REFERENCE
+      'reference': 'LINK', // Map reference to LINK
       'other': 'DOCUMENTATION' // Default fallback
     };
     
     const reference = await prisma.reference.create({
       data: {
         projectId,
+        userId: project.userId, // Add required userId field
         title,
         content,
-        url,
         category: categoryMap[category?.toLowerCase()] || 'DOCUMENTATION',
-        priority: (priority || 'MEDIUM') as Priority,
         tags: tags || [],
-        metadata: metadata || {}
+        metadata: {
+          ...metadata,
+          url: url // Store URL in metadata if provided
+        }
       }
     });
     
@@ -119,19 +118,24 @@ router.put('/:id', async (req: Request, res: Response) => {
     
     if (title !== undefined) updateData.title = title;
     if (content !== undefined) updateData.content = content;
-    if (url !== undefined) updateData.url = url;
-    if (priority !== undefined) updateData.priority = priority;
     if (tags !== undefined) updateData.tags = tags;
     
+    // Handle metadata updates for url and other fields
+    const currentReference = await prisma.reference.findUnique({ where: { id } });
+    if (currentReference) {
+      const currentMetadata = (currentReference.metadata as any) || {};
+      if (url !== undefined) {
+        updateData.metadata = { ...currentMetadata, url };
+      }
+    }
+    
     if (category !== undefined) {
-      const categoryMap: { [key: string]: Category } = {
+      const categoryMap: { [key: string]: ReferenceCategory } = {
         'documentation': 'DOCUMENTATION',
         'snippet': 'SNIPPET',
-        'configuration': 'CONFIGURATION',
-        'tools': 'TOOLS',
-        'api': 'API',
-        'tutorial': 'TUTORIAL',
-        'reference': 'REFERENCE',
+        'link': 'LINK',
+        'note': 'NOTE',
+        'reference': 'LINK',
         'other': 'DOCUMENTATION'
       };
       updateData.category = categoryMap[category?.toLowerCase()] || 'DOCUMENTATION';
