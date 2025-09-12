@@ -21,7 +21,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-CosmicBoard Backend - A Node.js/Express API service with PostgreSQL database using Prisma ORM, designed for task and project management with multi-priority support.
+CosmicBoard Backend - A Node.js/Express API service with PostgreSQL database using Prisma ORM, designed for collaborative task and project management with multi-priority support, real-time features, and comprehensive AWS integration.
 
 ## Infrastructure Configuration
 
@@ -30,7 +30,7 @@ CosmicBoard Backend - A Node.js/Express API service with PostgreSQL database usi
 /Users/sammuthu/Projects/nginx-reverse-proxy/
 ```
 
-Do NOT place nginx, hosts, or dnsmasq configurations in individual project folders (cosmicboard, cosmicboard-mobile, or cosmicboard-backend).
+Do NOT place nginx, hosts, or dnsmasq configurations in individual project folders.
 
 ### Domain Configuration
 - **Primary Domain**: cosmicspace.app
@@ -42,93 +42,136 @@ Do NOT place nginx, hosts, or dnsmasq configurations in individual project folde
 
 ### Development
 ```bash
-npm run dev              # Start development server with nodemon (port 7779)
-npm run build           # Compile TypeScript to JavaScript in ./dist
-npm start               # Start production server from ./dist
+npm run dev              # Start with nodemon (port 7779)
+npm run dev:localstack   # Start with LocalStack AWS environment
+npm run build           # Compile TypeScript to ./dist
+npm start               # Start production server
 ```
 
-### Database Management
+### Infrastructure
 ```bash
-npm run docker:up       # Start PostgreSQL and Redis containers
-npm run docker:reset    # Reset Docker volumes and restart containers
-npm run prisma:generate # Generate Prisma client after schema changes
-npm run prisma:migrate  # Apply database migrations
-npm run prisma:studio   # Open Prisma Studio UI (port 5555)
-npm run prisma:seed     # Seed database with initial data
+npm run localstack:start # Start LocalStack AWS simulation
+npm run docker:up       # Start PostgreSQL and Redis
+npm run docker:down     # Stop containers
+npm run docker:reset    # Reset volumes and restart
+```
+
+### Database
+```bash
+npm run prisma:generate # Generate Prisma client
+npm run prisma:migrate  # Apply migrations
+npm run prisma:studio   # Open Prisma Studio (port 5555)
+npm run prisma:seed     # Seed initial data
 ```
 
 ### Testing
 ```bash
-npm test                # Run Jest tests (currently no tests implemented)
+npm test                # Run Jest tests (framework ready, tests pending)
 ```
 
 ## Architecture
 
-### Core Structure
-- **src/server.ts**: Express server initialization, middleware setup, Prisma client
-- **src/routes/**: API route definitions organized by resource
-  - `index.ts`: Main router with health check
-  - `projects.ts`: Project CRUD operations
-  - `tasks.ts`: Task management within projects
-  - `references.ts`: Reference/documentation management
-- **src/controllers/**: Business logic (to be implemented)
-- **src/middleware/**: Authentication, validation (to be implemented)
-- **src/services/**: Data access layer (to be implemented)
+### Core Services
+- **src/server.ts**: Express initialization, middleware, Prisma client
+- **src/config/environment.ts**: Environment-aware configuration
+- **src/services/aws/**: AWS SDK v3 services (S3, SES, Secrets Manager)
+- **src/services/auth.service.ts**: JWT authentication with magic links
+- **src/middleware/auth.middleware.ts**: Token validation and session management
 
-### Database Schema (PostgreSQL via Prisma)
-- **Project**: Core entity with tasks, references, and media
-- **Task**: Priority levels (LOW, MEDIUM, HIGH, URGENT), status tracking
-- **Reference**: Documentation/snippets with categories and tags
-- **Media**: Photos, screenshots, and PDF files associated with projects
-  - Types: photo, screenshot, pdf
-  - Includes url, thumbnailUrl, size, mimeType, metadata
-- Uses JSONB for flexible metadata storage
+### Authentication System
+- **Magic Link Flow**: Email-based with 15-minute expiry
+- **6-Digit Codes**: For mobile app authentication
+- **JWT Tokens**: Access (15min) and refresh (7 days) tokens
+- **Session Management**: Secure token rotation
+- **Multi-Provider Support**: Email, Phone, Google, GitHub, Apple, Passkey
 
-### Media Feature Implementation Status
-**Important**: The Media feature implementation is documented in `photo-screenshots-pdf-feature.README.md`. This includes:
-- Complete API endpoints specification
-- File upload handling with formidable and sharp
-- Thumbnail generation for images
-- PDF metadata extraction
-- Screenshot paste functionality
-- Local file storage structure in `/uploads/`
-- Cascading deletes on relationships
+### AWS Integration
+**LocalStack Development**:
+- S3 buckets: `cosmicspace-media`, `cosmicspace-backups`
+- SES email service with templates
+- Secrets Manager for configuration
+- Auto-switches between local and production
+
+**Production Architecture**:
+- ECS Fargate containers
+- RDS PostgreSQL with read replicas
+- CloudFront CDN
+- Application Load Balancer
+
+### Database Schema (Prisma)
+- **User Management**: Profiles, sessions, connections
+- **Projects**: Ownership, members, roles (OWNER, ADMIN, EDITOR, VIEWER)
+- **Tasks**: Priority levels (LOW, MEDIUM, HIGH, URGENT)
+- **Media**: Photos, screenshots, PDFs with thumbnails
+- **References**: Documentation with categories and tags
+- **Activities**: Comprehensive audit trail
+- **Notifications**: Real-time user notifications
+
+### Media Handling
+- **Upload**: Formidable/Multer with size limits
+- **Processing**: Sharp for thumbnails
+- **Storage**: Local (`/uploads/`) or S3
+- **PDF Support**: Metadata extraction with pdf-parse
+- Implementation details in `photo-screenshots-pdf-feature.README.md`
 
 ### API Pattern
-All endpoints follow RESTful conventions:
 - Base URL: `http://localhost:7779/api`
-- Resources: `/projects`, `/tasks`, `/references`
-- Nested resources: `/projects/:projectId/tasks`
-- Standard CRUD operations with Express routing
-
-### Key Technical Decisions
-- **TypeScript**: Strict mode enabled with comprehensive type checking
-- **Prisma ORM**: Type-safe database access with migrations
-- **PostgreSQL**: JSONB fields for flexibility, array support for tags
-- **Docker Compose**: Local development environment with PostgreSQL and Redis
-- **Error Handling**: Centralized error middleware with environment-aware responses
+- RESTful conventions with nested resources
+- Standard CRUD operations
+- JWT authentication required for protected routes
 
 ## Development Workflow
 
-1. Ensure Docker containers are running: `npm run docker:up`
-2. Apply any schema changes: `npm run prisma:generate && npm run prisma:migrate`
-3. Start dev server: `npm run dev`
-4. Make changes - server auto-restarts via nodemon
-5. Test endpoints at `http://localhost:7779/api`
+### LocalStack Setup (Recommended)
+```bash
+npm run docker:reset        # Clean start
+npm run localstack:start    # Start AWS services
+npm run dev:localstack      # Run with LocalStack config
+```
+
+### Standard Development
+```bash
+npm run docker:up           # Start PostgreSQL/Redis
+npm run prisma:migrate      # Apply migrations
+npm run dev                 # Start development server
+```
 
 ## Environment Variables
-Required in `.env`:
-- `DATABASE_URL`: PostgreSQL connection string
-- `PORT`: Server port (default 7779)
-- `NODE_ENV`: development/production
-- `CORS_ORIGIN`: Comma-separated allowed origins
-- JWT secrets and Redis URL for future authentication implementation
+
+### Required
+```bash
+DATABASE_URL=postgresql://user:password@localhost:5432/cosmicboard
+PORT=7779
+NODE_ENV=development
+JWT_SECRET=your-secret-key
+JWT_REFRESH_SECRET=your-refresh-secret
+```
+
+### AWS/LocalStack
+```bash
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=test (for LocalStack)
+AWS_SECRET_ACCESS_KEY=test (for LocalStack)
+AWS_ENDPOINT=http://localhost:4566 (LocalStack)
+S3_BUCKET=cosmicspace-media
+SES_FROM_EMAIL=noreply@cosmicspace.app
+```
+
+### Feature Flags
+```bash
+ENABLE_AUTH=true
+ENABLE_RATE_LIMIT=true
+ENABLE_FILE_UPLOAD=true
+MAX_FILE_SIZE=10485760  # 10MB
+```
 
 ## Current Implementation Status
-- ✅ Basic CRUD APIs for projects, tasks, references
-- ✅ Prisma schema and migrations
-- ✅ Docker development environment
-- ⏳ Authentication/authorization middleware pending
-- ⏳ Input validation pending
-- ⏳ Test coverage pending
-- ⏳ Redis caching pending
+- ✅ Core CRUD APIs for all entities
+- ✅ Magic link authentication system
+- ✅ AWS integration with LocalStack
+- ✅ Media upload and processing
+- ✅ User management and roles
+- ⏳ Jest testing framework (configured, no tests)
+- ⏳ No linting configuration (.eslintrc)
+- ⏳ Redis caching implementation pending
+- Add to memory "Never reset the database but alter the table as we add new columns, apply all existing data to the user email nmuthu@gmail.com unless the data is already associated with the userId"

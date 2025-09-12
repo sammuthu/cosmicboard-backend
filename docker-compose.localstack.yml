@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  localstack:
+    container_name: cosmicspace-localstack
+    image: localstack/localstack:latest
+    ports:
+      - "4566:4566"            # LocalStack Gateway
+      - "4510-4559:4510-4559"  # External services port range
+    environment:
+      # Services to enable
+      - SERVICES=s3,ses,secretsmanager,rds
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - AWS_DEFAULT_REGION=us-east-1
+      - HOSTNAME_EXTERNAL=localhost
+      # Persistence
+      - PERSISTENCE=1
+      # Pro features (if you have LocalStack Pro)
+      # - LOCALSTACK_AUTH_TOKEN=your-auth-token
+    volumes:
+      - "${TMPDIR:-/tmp}/localstack:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./localstack-init:/docker-entrypoint-initaws.d"
+    networks:
+      - cosmicspace-network
+
+  postgres:
+    container_name: cosmicspace-postgres
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: cosmicspace
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: localdev123
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./prisma/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - cosmicspace-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d cosmicspace"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  cosmicspace-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

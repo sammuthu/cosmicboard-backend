@@ -1,15 +1,8 @@
 import { PrismaClient, User, AuthProvider } from '@prisma/client';
-import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import nodemailer from 'nodemailer';
+import emailService from './aws/ses.service';
 
 const prisma = new PrismaClient();
-
-interface TokenPayload {
-  userId: string;
-  email: string;
-  sessionId: string;
-}
 
 interface AuthTokens {
   accessToken: string;
@@ -18,44 +11,18 @@ interface AuthTokens {
 }
 
 export class AuthService {
-  private static jwtSecret = process.env.JWT_SECRET || 'cosmic-secret-key-change-in-production';
-  private static refreshSecret = process.env.JWT_REFRESH_SECRET || 'cosmic-refresh-secret-change-in-production';
-  private static accessTokenExpiry = '15m';
-  private static refreshTokenExpiry = '7d';
   private static magicLinkExpiry = 15 * 60 * 1000; // 15 minutes
 
-  private static transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
-
-  static generateTokens(payload: TokenPayload): AuthTokens {
-    const accessToken = jwt.sign(payload, this.jwtSecret, {
-      expiresIn: this.accessTokenExpiry,
-    } as jwt.SignOptions);
-
-    const refreshToken = jwt.sign(payload, this.refreshSecret, {
-      expiresIn: this.refreshTokenExpiry,
-    } as jwt.SignOptions);
-
+  static generateTokens(userId: string, email: string, sessionId: string): AuthTokens {
+    // Simple token generation without JWT for now
+    const accessToken = crypto.randomBytes(32).toString('hex');
+    const refreshToken = crypto.randomBytes(32).toString('hex');
+    
     return {
       accessToken,
       refreshToken,
       expiresIn: 15 * 60, // 15 minutes in seconds
     };
-  }
-
-  static verifyAccessToken(token: string): TokenPayload {
-    return jwt.verify(token, this.jwtSecret) as TokenPayload;
-  }
-
-  static verifyRefreshToken(token: string): TokenPayload {
-    return jwt.verify(token, this.refreshSecret) as TokenPayload;
   }
 
   static async sendMagicLink(email: string, isSignup: boolean = false): Promise<{ success: boolean; message: string }> {
@@ -109,41 +76,22 @@ export class AuthService {
       // Send email
       const magicLinkUrl = `${process.env.FRONTEND_URL || 'http://localhost:7777'}/auth?token=${token}`;
       
-      // For development, log the magic link. But send email if explicitly enabled
-      const shouldSendEmail = process.env.ENABLE_EMAIL_SENDING === 'true' || process.env.NODE_ENV === 'production';
+      // For development, log the magic link
+      console.log('\n===========================================');
+      console.log('🔐 MAGIC LINK GENERATED');
+      console.log('===========================================');
+      console.log(`Email: ${email}`);
+      console.log(`Magic Link: ${magicLinkUrl}`);
+      console.log(`Code: ${code}`);
+      console.log('===========================================\n');
       
-      if (process.env.NODE_ENV === 'development') {
-        console.log('\n===========================================');
-        console.log('🔐 MAGIC LINK (Development Mode)');
-        console.log('===========================================');
-        console.log(`Email: ${email}`);
-        console.log(`Magic Link: ${magicLinkUrl}`);
-        console.log(`Code: ${code}`);
-        console.log('===========================================\n');
-      }
-      
-      if (shouldSendEmail && process.env.SMTP_USER && process.env.SMTP_PASS) {
-        await this.transporter.sendMail({
-          from: process.env.SMTP_FROM || '"CosmicSpace" <noreply@cosmicspace.app>',
-          to: email,
-          subject: 'Your CosmicSpace Magic Link',
-          html: `
-            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #333;">Welcome to CosmicSpace! 🚀</h2>
-              <p>Click the link below to sign in to your account:</p>
-              <a href="${magicLinkUrl}" style="display: inline-block; padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 8px; margin: 16px 0;">
-                Sign In to CosmicSpace
-              </a>
-              <p>Or use this code in the app: <strong style="font-size: 24px; letter-spacing: 2px;">${code}</strong></p>
-              <p style="color: #666; font-size: 14px;">This link will expire in 15 minutes. If you didn't request this, please ignore this email.</p>
-            </div>
-          `,
-        });
-        console.log(`✅ Email sent successfully to ${email}`);
-      } else if (!shouldSendEmail) {
-        console.log('📧 Email sending disabled in development mode. Set ENABLE_EMAIL_SENDING=true to send emails.');
-      } else {
-        console.log('⚠️ Email not sent: SMTP credentials not configured');
+      // Send email using AWS SES
+      try {
+        await emailService.sendMagicLink(email, magicLinkUrl, code, isSignup);
+        console.log(`Magic link email sent to ${email}`);
+      } catch (emailError) {
+        console.error('Failed to send magic link email:', emailError);
+        // Continue even if email fails in development
       }
 
       return {
@@ -209,14 +157,14 @@ export class AuthService {
         },
       });
 
-      // Generate JWT tokens
-      const tokens = this.generateTokens({
-        userId: magicLink.user.id,
-        email: magicLink.user.email,
-        sessionId: session.id,
-      });
+      // Generate tokens
+      const tokens = this.generateTokens(
+        magicLink.user.id,
+        magicLink.user.email,
+        session.id
+      );
 
-      // Update session with JWT tokens
+      // Update session with tokens
       await prisma.session.update({
         where: { id: session.id },
         data: {
@@ -280,14 +228,14 @@ export class AuthService {
         },
       });
 
-      // Generate JWT tokens
-      const tokens = this.generateTokens({
-        userId: magicLink.user.id,
-        email: magicLink.user.email,
-        sessionId: session.id,
-      });
+      // Generate tokens
+      const tokens = this.generateTokens(
+        magicLink.user.id,
+        magicLink.user.email,
+        session.id
+      );
 
-      // Update session with JWT tokens
+      // Update session with tokens
       await prisma.session.update({
         where: { id: session.id },
         data: {
@@ -312,11 +260,8 @@ export class AuthService {
 
   static async refreshTokens(refreshToken: string): Promise<{ success: boolean; tokens?: AuthTokens; message?: string }> {
     try {
-      const payload = this.verifyRefreshToken(refreshToken);
-
       const session = await prisma.session.findFirst({
         where: {
-          id: payload.sessionId,
           refreshToken,
           expiresAt: { gt: new Date() },
         },
@@ -331,11 +276,11 @@ export class AuthService {
       }
 
       // Generate new tokens
-      const tokens = this.generateTokens({
-        userId: session.user.id,
-        email: session.user.email,
-        sessionId: session.id,
-      });
+      const tokens = this.generateTokens(
+        session.user.id,
+        session.user.email,
+        session.id
+      );
 
       // Update session with new tokens
       await prisma.session.update({
@@ -377,6 +322,18 @@ export class AuthService {
     return prisma.user.findUnique({
       where: { id: userId },
     });
+  }
+
+  static async getUserByToken(token: string): Promise<User | null> {
+    const session = await prisma.session.findFirst({
+      where: {
+        token,
+        expiresAt: { gt: new Date() },
+      },
+      include: { user: true },
+    });
+
+    return session?.user || null;
   }
 
   static async updateUser(userId: string, data: { name?: string; username?: string; bio?: string; avatar?: string }): Promise<User> {
