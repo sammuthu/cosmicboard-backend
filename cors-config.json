@@ -1,0 +1,19 @@
+{
+  "CORSRules": [
+    {
+      "AllowedOrigins": [
+        "http://localhost:7777",
+        "http://localhost:3000",
+        "http://cosmicspace.app",
+        "https://cosmicspace.app",
+        "http://cosmic.board",
+        "https://cosmic.board",
+        "*"
+      ],
+      "AllowedMethods": ["GET", "PUT", "POST", "DELETE", "HEAD"],
+      "AllowedHeaders": ["*"],
+      "ExposeHeaders": ["ETag", "Content-Length", "x-amz-request-id"],
+      "MaxAgeSeconds": 3000
+    }
+  ]
+}

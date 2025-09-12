@@ -14,7 +14,8 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
         _count: {
           select: {
             tasks: true,
-            references: true
+            references: true,
+            media: true
           }
         },
         tasks: {
@@ -25,6 +26,11 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
         references: {
           select: {
             category: true
+          }
+        },
+        media: {
+          select: {
+            type: true
           }
         }
       }
@@ -38,10 +44,11 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
       
       const totalReferences = project._count.references;
       const snippets = project.references.filter(r => r.category === 'SNIPPET').length;
-      const documentation = project.references.filter(r => r.category === 'DOCUMENTATION').length;
+      // Count PDF media items as documentation
+      const documentation = project.media.filter(m => m.type === 'PDF').length;
       
       // Remove the included relations from the response
-      const { tasks, references, _count, ...projectData } = project;
+      const { tasks, references, media, _count, ...projectData } = project;
       
       return {
         ...projectData,

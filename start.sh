@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 
 # Function to print colored output
 print_status() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+    [ "$VERBOSE" = "1" ] && echo -e "${BLUE}[INFO]${NC} $1"
 }
 
 print_success() {
@@ -22,38 +22,43 @@ print_success() {
 }
 
 print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
+    [ "$VERBOSE" = "1" ] && echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
 print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Check if .env file exists (use .env.localstack for LocalStack setup)
-if [ -f .env.localstack ]; then
-    print_status "Using LocalStack environment configuration"
-    export $(cat .env.localstack | grep -v '^#' | xargs)
-elif [ -f .env ]; then
-    print_status "Using standard environment configuration"
-else
-    print_error ".env file not found! Please create one based on .env.example"
+# Kill any existing backend processes on port 7779
+kill_existing_backend() {
+    local pid=$(lsof -ti:7779 2>/dev/null || true)
+    if [ ! -z "$pid" ]; then
+        print_status "Killing existing backend process on port 7779 (PID: $pid)..."
+        kill -9 $pid 2>/dev/null || true
+        sleep 1
+    fi
+}
+
+# Kill existing backend process
+kill_existing_backend
+
+# Always use LocalStack setup for consistency
+if [ ! -f .env.localstack ]; then
+    print_error ".env.localstack file not found! Please ensure LocalStack is configured."
     exit 1
 fi
 
-print_status "Starting CosmicBoard Backend Services..."
+print_status "Using LocalStack environment configuration"
+export $(cat .env.localstack | grep -v '^#' | xargs)
 
-# Step 1: Clean up any conflicting containers
-print_status "Checking for conflicting containers..."
-
-# Stop pgAdmin if it's causing issues (not essential for backend)
-if docker ps | grep -q "cosmicboard_pgadmin"; then
-    print_warning "Stopping pgAdmin container to free up port..."
-    docker stop cosmicboard_pgadmin 2>/dev/null || true
-fi
-
-# Check if another nginx container is using port 5050
-if lsof -i :5050 > /dev/null 2>&1; then
-    print_warning "Port 5050 is in use, but this won't affect the backend API (port 7779)"
+# Quick mode - skip checks if requested
+if [ "$1" != "--quick" ]; then
+    print_status "Starting CosmicBoard Backend Services..."
+    
+    # Stop pgAdmin if it's causing issues (not essential for backend)
+    if docker ps | grep -q "cosmicboard_pgadmin"; then
+        docker stop cosmicboard_pgadmin 2>/dev/null || true
+    fi
 fi
 
 # Step 2: Ensure PostgreSQL is running
@@ -105,26 +110,16 @@ print_status "Generating Prisma client..."
 npm run prisma:generate
 print_success "Prisma client generated"
 
-# Step 6: Apply migrations (safe - won't reset data)
-print_status "Applying database migrations..."
-if [ -f .env.localstack ]; then
+# Step 6: Apply migrations only if --migrate flag is passed
+if [ "$1" == "--migrate" ] || [ "$2" == "--migrate" ]; then
+    print_status "Applying database migrations..."
     DATABASE_URL=postgresql://admin:localdev123@localhost:5432/cosmicspace npx prisma migrate deploy 2>/dev/null || {
         print_warning "Some migrations may already be applied, continuing..."
     }
-else
-    npx prisma migrate deploy 2>/dev/null || {
-        print_warning "Some migrations may already be applied, continuing..."
-    }
+    print_success "Database migrations applied"
 fi
-print_success "Database migrations applied"
 
-# Step 7: Run safe data migration if needed
-if [ -f scripts/migrate-preserve-data.ts ]; then
-    print_status "Ensuring data is associated with nmuthu@gmail.com..."
-    npx tsx scripts/migrate-preserve-data.ts 2>/dev/null || {
-        print_warning "Data migration may have already been applied"
-    }
-fi
+# Skip data migration script - database is stable
 
 # Step 8: Seed database if requested
 if [ "$1" == "--seed" ]; then

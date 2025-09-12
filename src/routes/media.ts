@@ -9,6 +9,7 @@ import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } fro
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import multer from 'multer';
 import * as crypto from 'crypto';
+import * as path from 'path';
 
 const router = Router();
 
@@ -93,6 +94,7 @@ router.post('/upload', authenticate, upload.single('file'), async (req: AuthRequ
     // Generate unique file ID and S3 key
     const fileId = crypto.randomUUID();
     const fileName = name || req.file.originalname;
+    const fileExtension = path.extname(fileName).slice(1).toLowerCase(); // Remove dot and lowercase
     const s3Key = `${type.toLowerCase()}/${projectId}/${fileId}/${fileName}`;
     
     // Upload to S3
@@ -123,6 +125,8 @@ router.post('/upload', authenticate, upload.single('file'), async (req: AuthRequ
         mimeType: req.file.mimetype,
         metadata: {
           s3Key,
+          extension: fileExtension || 'unknown',
+          originalName: req.file.originalname,
           uploadedAt: new Date().toISOString()
         }
       },
@@ -218,6 +222,103 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error('Error updating media:', error);
     res.status(500).json({ error: 'Failed to update media' });
+  }
+});
+
+// GET /api/media/:id/file - Proxy endpoint to serve file content
+router.get('/:id/file', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const media = await prisma.media.findFirst({
+      where: {
+        id: req.params.id,
+        userId: req.user!.id
+      }
+    });
+    
+    if (!media) {
+      console.error(`Media not found for id: ${req.params.id}, user: ${req.user!.id}`);
+      return res.status(404).json({ error: 'Media not found' });
+    }
+    
+    const metadata = media.metadata as any;
+    if (!metadata?.s3Key) {
+      console.error(`S3 key not found in metadata for media: ${req.params.id}`);
+      return res.status(404).json({ error: 'File not found' });
+    }
+    
+    console.log(`Fetching file from S3: bucket=${BUCKET_NAME}, key=${metadata.s3Key}`);
+    
+    // Get the file from S3
+    const command = new GetObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: metadata.s3Key
+    });
+    
+    try {
+      const response = await s3Client.send(command);
+      
+      // Set appropriate headers
+      res.setHeader('Content-Type', media.mimeType || 'application/octet-stream');
+      res.setHeader('Content-Disposition', `inline; filename="${media.name}"`);
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', '*');
+      
+      // Handle the stream properly
+      if (response.Body) {
+        const stream = response.Body as any;
+        
+        // For Node.js Readable Stream
+        if (typeof stream.pipe === 'function') {
+          stream.pipe(res);
+        } 
+        // For Web Streams API (newer AWS SDK versions)
+        else if (stream.transformToWebStream) {
+          const webStream = stream.transformToWebStream();
+          const reader = webStream.getReader();
+          
+          const pump = async () => {
+            try {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) {
+                  res.end();
+                  break;
+                }
+                res.write(value);
+              }
+            } catch (error) {
+              console.error('Error streaming file:', error);
+              res.end();
+            }
+          };
+          
+          pump();
+        }
+        // Fallback for buffer
+        else {
+          const chunks: any[] = [];
+          for await (const chunk of stream) {
+            chunks.push(chunk);
+          }
+          const buffer = Buffer.concat(chunks);
+          res.send(buffer);
+        }
+      } else {
+        console.error('No body in S3 response');
+        res.status(500).json({ error: 'Failed to retrieve file content' });
+      }
+    } catch (s3Error: any) {
+      console.error('S3 error:', s3Error);
+      if (s3Error.Code === 'NoSuchKey') {
+        res.status(404).json({ error: 'File not found in storage' });
+      } else {
+        res.status(500).json({ error: 'Failed to retrieve file from storage' });
+      }
+    }
+  } catch (error) {
+    console.error('Error serving media file:', error);
+    res.status(500).json({ error: 'Failed to serve media file' });
   }
 });
 
