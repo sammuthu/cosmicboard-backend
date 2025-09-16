@@ -120,11 +120,28 @@ router.get('/user/active', authenticate, async (req: AuthRequest, res: Response)
     })
 
     if (userTheme) {
-      // Merge custom colors with theme defaults
-      const mergedColors = {
-        ...(userTheme.theme.colors as object),
-        ...(userTheme.customColors as object || {})
+      // Deep merge custom colors with theme defaults
+      const themeColors = userTheme.theme.colors as any
+      const customColors = userTheme.customColors as any || {}
+
+      // Deep merge function
+      const deepMerge = (target: any, source: any): any => {
+        const output = { ...target }
+        for (const key in source) {
+          if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+            if (target[key] && typeof target[key] === 'object' && !Array.isArray(target[key])) {
+              output[key] = deepMerge(target[key], source[key])
+            } else {
+              output[key] = source[key]
+            }
+          } else {
+            output[key] = source[key]
+          }
+        }
+        return output
       }
+
+      const mergedColors = deepMerge(themeColors, customColors)
 
       return res.json({
         success: true,
@@ -324,7 +341,17 @@ router.post('/user/set-active', authenticate, async (req: AuthRequest, res: Resp
       data: { isActive: false }
     })
 
-    // Create or update customization with no custom colors (use defaults)
+    // Check if user already has a customization for this theme
+    const existingCustomization = await prisma.userThemeCustomization.findUnique({
+      where: {
+        userId_themeId: {
+          userId,
+          themeId
+        }
+      }
+    })
+
+    // Create or update customization, preserving existing custom colors if they exist
     const customization = await prisma.userThemeCustomization.upsert({
       where: {
         userId_themeId: {
@@ -334,7 +361,8 @@ router.post('/user/set-active', authenticate, async (req: AuthRequest, res: Resp
       },
       update: {
         isActive: true,
-        customColors: {},
+        // Keep existing customColors if they exist, otherwise use empty object
+        customColors: existingCustomization?.customColors || {},
         updatedAt: new Date()
       },
       create: {
@@ -388,13 +416,8 @@ router.delete('/user/customizations/:id', authenticate, async (req: AuthRequest,
       })
     }
 
-    // Don't allow deletion of active customization
-    if (customization.isActive) {
-      return res.status(400).json({
-        success: false,
-        error: 'Cannot delete active customization. Set another theme as active first.'
-      })
-    }
+    // If deleting active customization, we allow it (for reset functionality)
+    // The frontend will handle setting a new theme or falling back to defaults
 
     await prisma.userThemeCustomization.delete({
       where: { id }
