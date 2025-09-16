@@ -28,9 +28,10 @@ model User {
   Reference                  Reference[]
   RefreshToken               RefreshToken[]
   Subscription               Subscription?
-  Task_Task_assigneeIdToUser Task[]         @relation("Task_assigneeIdToUser")
-  Task_Task_creatorIdToUser  Task[]         @relation("Task_creatorIdToUser")
+  Task_Task_assigneeIdToUser Task[]                   @relation("Task_assigneeIdToUser")
+  Task_Task_creatorIdToUser  Task[]                   @relation("Task_creatorIdToUser")
   Media                      Media[]
+  themeCustomizations        UserThemeCustomization[]
 
   @@index([email])
 }
@@ -216,11 +217,45 @@ model Media {
   metadata     Json?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
-  
+
   project      Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@index([projectId])
   @@index([userId])
   @@index([type])
+}
+
+model ThemeTemplate {
+  id                String                   @id @default(cuid())
+  name              String                   @unique
+  displayName       String
+  description       String?
+  isDefault         Boolean                  @default(false)
+  colors            Json                     // Stores all color configurations
+  metadata          Json?                    // Additional theme metadata
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  userCustomizations UserThemeCustomization[]
+
+  @@index([name])
+}
+
+model UserThemeCustomization {
+  id             String         @id @default(cuid())
+  userId         String
+  themeId        String
+  customColors   Json           // User's customized colors
+  isActive       Boolean        @default(false)
+  metadata       Json?          // Additional customization metadata
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme          ThemeTemplate  @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, themeId])
+  @@index([userId])
+  @@index([themeId])
 }

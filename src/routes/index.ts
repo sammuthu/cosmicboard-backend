@@ -6,6 +6,7 @@ import referenceRoutes from './references';
 import mediaRoutes from './media';
 import searchRoutes from './search';
 import exportImportRoutes from './export-import';
+import themeRoutes from './themes';
 
 const router = Router();
 
@@ -16,6 +17,7 @@ router.use('/tasks', taskRoutes);
 router.use('/references', referenceRoutes);
 router.use('/media', mediaRoutes);
 router.use('/search', searchRoutes);
+router.use('/themes', themeRoutes);
 router.use('/', exportImportRoutes); // Export and import at root level
 
 // Health check
@@ -29,7 +31,7 @@ router.get('/health', (_req, res) => {
 
 // API info
 router.get('/', (_req, res) => {
-  res.json({ 
+  res.json({
     message: 'CosmicBoard Backend API',
     version: '1.0.0',
     endpoints: {
@@ -39,6 +41,7 @@ router.get('/', (_req, res) => {
       references: '/api/references',
       media: '/api/media',
       search: '/api/search',
+      themes: '/api/themes',
       export: '/api/export',
       import: '/api/import',
       health: '/api/health'
