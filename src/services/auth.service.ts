@@ -351,4 +351,112 @@ export class AuthService {
       },
     });
   }
+
+  static async setupDevelopmentAuth(email: string): Promise<{
+    success: boolean;
+    user?: User;
+    tokens?: AuthTokens;
+    message?: string;
+  }> {
+    try {
+      console.log('🔧 Setting up development authentication for:', email);
+
+      // Check if user exists, if not create them
+      let user = await prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (!user) {
+        console.log('👤 Creating new development user:', email);
+        user = await prisma.user.create({
+          data: {
+            email,
+            name: email === 'nmuthu@gmail.com' ? 'Development User' : 'Dev User',
+            username: email.split('@')[0],
+            emailVerified: new Date(),
+            isActive: true,
+          },
+        });
+      } else {
+        console.log('👤 Found existing development user:', email);
+        // Ensure user is active and email verified
+        if (!user.emailVerified || !user.isActive) {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              emailVerified: new Date(),
+              isActive: true,
+            },
+          });
+        }
+      }
+
+      // Check for existing valid refresh tokens first
+      const existingToken = await prisma.refreshToken.findFirst({
+        where: {
+          userId: user.id,
+          expiresAt: { gt: new Date() }, // Not expired
+        },
+        orderBy: { createdAt: 'desc' }, // Get the most recent
+      });
+
+      let tokens: AuthTokens;
+
+      if (existingToken) {
+        console.log('🔄 Found existing valid refresh token, reusing...');
+        // Generate new access token using existing refresh token
+        tokens = this.generateTokens(user.id, user.email);
+
+        // Update the existing refresh token to extend its life if needed
+        await prisma.refreshToken.update({
+          where: { id: existingToken.id },
+          data: {
+            token: tokens.refreshToken,
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Extend to 7 days
+          },
+        });
+
+        console.log('♻️ Reusing existing tokens for seamless cross-platform experience');
+      } else {
+        console.log('🆕 No valid tokens found, generating fresh tokens...');
+
+        // Clean up any expired tokens for this user
+        await prisma.refreshToken.deleteMany({
+          where: {
+            userId: user.id,
+            expiresAt: { lte: new Date() },
+          },
+        });
+
+        // Generate fresh tokens
+        tokens = this.generateTokens(user.id, user.email);
+
+        // Store new refresh token in database
+        await prisma.refreshToken.create({
+          data: {
+            id: crypto.randomBytes(16).toString('hex'),
+            token: tokens.refreshToken,
+            userId: user.id,
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+          },
+        });
+      }
+
+      console.log('✅ Development authentication setup completed');
+      console.log('🔑 Access token:', tokens.accessToken.substring(0, 20) + '...');
+      console.log('🔄 Refresh token:', tokens.refreshToken.substring(0, 20) + '...');
+
+      return {
+        success: true,
+        user,
+        tokens,
+      };
+    } catch (error) {
+      console.error('❌ Error setting up development auth:', error);
+      return {
+        success: false,
+        message: 'Failed to setup development authentication',
+      };
+    }
+  }
 }

@@ -201,7 +201,15 @@ export const getCorsConfig = () => {
     },
     credentials: config.cors.credentials,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'X-Device-Type',
+      'X-Device-OS',
+      'X-Device-Identifier',
+      'X-Device-Name'
+    ],
     exposedHeaders: ['X-Total-Count', 'X-Page-Count'],
     maxAge: 86400 // 24 hours
   }

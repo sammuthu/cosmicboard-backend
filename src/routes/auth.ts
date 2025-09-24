@@ -167,12 +167,56 @@ router.post('/logout', authenticate, async (req: AuthRequest, res) => {
     // Get the actual refresh token from the authorization header
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1];
-    
+
     await AuthService.logout(req.user!.id, token || '');
     res.json({ message: 'Logged out successfully' });
   } catch (error) {
     console.error('Error logging out:', error);
     res.status(500).json({ error: 'Failed to logout' });
+  }
+});
+
+// Development authentication setup (only in development)
+router.post('/setup-dev-auth', async (req, res) => {
+  try {
+    // Only allow this endpoint in development mode
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(403).json({ error: 'Development endpoint not available in production' });
+    }
+
+    // Check if we're using LocalStack (indicates development mode)
+    const isLocalStack = process.env.AWS_ENDPOINT && process.env.AWS_ENDPOINT.includes('localhost');
+    if (!isLocalStack) {
+      return res.status(403).json({ error: 'Development endpoint only available with LocalStack' });
+    }
+
+    const { email = 'nmuthu@gmail.com' } = req.body;
+
+    console.log('🔧 Setting up development authentication for:', email);
+
+    // Use the AuthService to create or find the development user and generate tokens
+    const result = await AuthService.setupDevelopmentAuth(email);
+
+    if (!result.success) {
+      return res.status(400).json({ error: result.message });
+    }
+
+    console.log('✅ Development authentication setup completed for:', email);
+
+    res.json({
+      message: 'Development authentication setup completed',
+      user: {
+        id: result.user!.id,
+        email: result.user!.email,
+        name: result.user!.name,
+        username: result.user!.username,
+        avatar: result.user!.avatar,
+      },
+      tokens: result.tokens,
+    });
+  } catch (error) {
+    console.error('Error setting up development auth:', error);
+    res.status(500).json({ error: 'Failed to setup development authentication' });
   }
 });
 

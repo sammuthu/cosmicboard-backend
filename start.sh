@@ -49,7 +49,9 @@ if [ ! -f .env.localstack ]; then
 fi
 
 print_status "Using LocalStack environment configuration"
-export $(cat .env.localstack | grep -v '^#' | xargs)
+set -a  # Enable automatic export of variables
+source .env.localstack
+set +a  # Disable automatic export
 
 # Quick mode - skip checks if requested
 if [ "$1" != "--quick" ]; then
@@ -92,17 +94,16 @@ until docker exec cosmicspace-postgres pg_isready -U admin > /dev/null 2>&1; do
 done
 print_success "PostgreSQL is ready"
 
-# Step 4: Check LocalStack if using LocalStack environment
-if [ -f .env.localstack ]; then
-    print_status "Checking LocalStack container..."
-    if docker ps | grep -q "cosmicspace-localstack.*Up"; then
-        print_success "LocalStack container is already running"
-    else
-        print_status "Starting LocalStack..."
-        npm run localstack:start &
-        sleep 5
-        print_success "LocalStack started"
-    fi
+# Step 4: Start LocalStack only if not already running
+print_status "Checking LocalStack container..."
+if docker ps | grep -q "cosmicspace-localstack.*Up"; then
+    print_success "LocalStack container is already running"
+else
+    print_status "Starting LocalStack..."
+    npm run localstack:start > /dev/null 2>&1 || {
+        print_warning "LocalStack startup encountered issues, continuing anyway..."
+    }
+    print_success "LocalStack started"
 fi
 
 # Step 5: Generate Prisma client (always do this in case schema changed)

@@ -54,6 +54,33 @@ const themeCustomizationSchema = z.object({
   })
 })
 
+// Helper to extract device info from headers
+function getDeviceInfo(req: Request) {
+  return {
+    deviceType: req.headers['x-device-type'] as string || 'desktop',
+    deviceOS: req.headers['x-device-os'] as string || 'browser',
+    deviceIdentifier: req.headers['x-device-identifier'] as string || 'unknown-device',
+    deviceName: req.headers['x-device-name'] as string || 'Unknown Device'
+  }
+}
+
+// Deep merge function for nested color objects
+function deepMerge(target: any, source: any): any {
+  const output = { ...target }
+  for (const key in source) {
+    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+      if (target[key] && typeof target[key] === 'object' && !Array.isArray(target[key])) {
+        output[key] = deepMerge(target[key], source[key])
+      } else {
+        output[key] = source[key]
+      }
+    } else {
+      output[key] = source[key]
+    }
+  }
+  return output
+}
+
 // Get all available theme templates
 router.get('/templates', async (req: Request, res: Response) => {
   try {
@@ -103,91 +130,92 @@ router.get('/templates/:id', async (req: Request, res: Response) => {
   }
 })
 
-// Get user's theme configuration (merged with defaults)
+// Find theme for device or create default
+async function findThemeForDeviceOrDefault(userId: string, deviceInfo: any) {
+  console.log('Finding theme for device:', deviceInfo)
+
+  // 1. Check for device-specific theme
+  const deviceTheme = await prisma.userThemeCustomization.findUnique({
+    where: {
+      userId_deviceIdentifier: {
+        userId,
+        deviceIdentifier: deviceInfo.deviceIdentifier
+      }
+    },
+    include: {
+      theme: true
+    }
+  })
+
+  if (deviceTheme) {
+    console.log('Found device-specific theme')
+    const mergedColors = deepMerge(deviceTheme.theme.colors, deviceTheme.customColors)
+    return {
+      id: deviceTheme.id,
+      themeId: deviceTheme.themeId,
+      name: deviceTheme.theme.name,
+      displayName: deviceTheme.theme.displayName,
+      colors: mergedColors,
+      isCustomized: true,
+      scope: 'device'
+    }
+  }
+
+  // 2. Check for user's global theme
+  let globalTheme = await prisma.userThemeGlobal.findUnique({
+    where: { userId },
+    include: { theme: true }
+  })
+
+  // 3. If no global theme, create one using default template
+  if (!globalTheme) {
+    console.log('Creating default global theme for user')
+
+    // Find default theme or first available theme
+    const defaultTemplate = await prisma.themeTemplate.findFirst({
+      where: { isDefault: true }
+    }) || await prisma.themeTemplate.findFirst({
+      orderBy: { name: 'asc' }
+    })
+
+    if (!defaultTemplate) {
+      throw new Error('No theme templates available')
+    }
+
+    globalTheme = await prisma.userThemeGlobal.create({
+      data: {
+        userId,
+        themeId: defaultTemplate.id,
+        customColors: {}
+      },
+      include: { theme: true }
+    })
+  }
+
+  console.log('Using global theme')
+  const mergedColors = deepMerge(globalTheme.theme.colors, globalTheme.customColors)
+  return {
+    id: globalTheme.id,
+    themeId: globalTheme.themeId,
+    name: globalTheme.theme.name,
+    displayName: globalTheme.theme.displayName,
+    colors: mergedColors,
+    isCustomized: Object.keys(globalTheme.customColors as any).length > 0,
+    scope: 'global'
+  }
+}
+
+// Get user's active theme using hierarchy
 router.get('/user/active', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user!.id
+    const deviceInfo = getDeviceInfo(req)
 
-    // Get user's active theme customization
-    const userTheme = await prisma.userThemeCustomization.findFirst({
-      where: {
-        userId,
-        isActive: true
-      },
-      include: {
-        theme: true
-      }
-    })
-
-    if (userTheme) {
-      // Deep merge custom colors with theme defaults
-      const themeColors = userTheme.theme.colors as any
-      const customColors = userTheme.customColors as any || {}
-
-      // Deep merge function
-      const deepMerge = (target: any, source: any): any => {
-        const output = { ...target }
-        for (const key in source) {
-          if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-            if (target[key] && typeof target[key] === 'object' && !Array.isArray(target[key])) {
-              output[key] = deepMerge(target[key], source[key])
-            } else {
-              output[key] = source[key]
-            }
-          } else {
-            output[key] = source[key]
-          }
-        }
-        return output
-      }
-
-      const mergedColors = deepMerge(themeColors, customColors)
-
-      return res.json({
-        success: true,
-        data: {
-          id: userTheme.id,
-          themeId: userTheme.themeId,
-          name: userTheme.theme.name,
-          displayName: userTheme.theme.displayName,
-          colors: mergedColors,
-          isCustomized: true
-        }
-      })
-    }
-
-    // If no active customization, return the default theme
-    const defaultTheme = await prisma.themeTemplate.findFirst({
-      where: { isDefault: true }
-    })
-
-    if (!defaultTheme) {
-      // Fallback to first theme if no default is set
-      const firstTheme = await prisma.themeTemplate.findFirst({
-        orderBy: { name: 'asc' }
-      })
-
-      return res.json({
-        success: true,
-        data: {
-          themeId: firstTheme?.id,
-          name: firstTheme?.name,
-          displayName: firstTheme?.displayName,
-          colors: firstTheme?.colors,
-          isCustomized: false
-        }
-      })
-    }
+    const theme = await findThemeForDeviceOrDefault(userId, deviceInfo)
 
     res.json({
       success: true,
-      data: {
-        themeId: defaultTheme.id,
-        name: defaultTheme.name,
-        displayName: defaultTheme.displayName,
-        colors: defaultTheme.colors,
-        isCustomized: false
-      }
+      data: theme
     })
   } catch (error) {
     console.error('Error fetching user theme:', error)
@@ -198,30 +226,53 @@ router.get('/user/active', authenticate, async (req: AuthRequest, res: Response)
   }
 })
 
-// Get all user's theme customizations
+// Get all user's theme customizations (both global and device-specific)
 router.get('/user/customizations', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user!.id
 
-    const customizations = await prisma.userThemeCustomization.findMany({
-      where: { userId },
-      include: {
-        theme: true
-      },
-      orderBy: { updatedAt: 'desc' }
-    })
+    const [globalTheme, deviceThemes] = await Promise.all([
+      prisma.userThemeGlobal.findUnique({
+        where: { userId },
+        include: { theme: true }
+      }),
+      prisma.userThemeCustomization.findMany({
+        where: { userId },
+        include: { theme: true },
+        orderBy: { updatedAt: 'desc' }
+      })
+    ])
+
+    const result = []
+
+    if (globalTheme) {
+      result.push({
+        id: globalTheme.id,
+        themeId: globalTheme.themeId,
+        themeName: globalTheme.theme.name,
+        themeDisplayName: globalTheme.theme.displayName,
+        customColors: globalTheme.customColors,
+        scope: 'global',
+        updatedAt: globalTheme.updatedAt
+      })
+    }
+
+    for (const deviceTheme of deviceThemes) {
+      result.push({
+        id: deviceTheme.id,
+        themeId: deviceTheme.themeId,
+        themeName: deviceTheme.theme.name,
+        themeDisplayName: deviceTheme.theme.displayName,
+        customColors: deviceTheme.customColors,
+        scope: 'device',
+        deviceName: deviceTheme.deviceName,
+        updatedAt: deviceTheme.updatedAt
+      })
+    }
 
     res.json({
       success: true,
-      data: customizations.map(c => ({
-        id: c.id,
-        themeId: c.themeId,
-        themeName: c.theme.name,
-        themeDisplayName: c.theme.displayName,
-        customColors: c.customColors,
-        isActive: c.isActive,
-        updatedAt: c.updatedAt
-      }))
+      data: result
     })
   } catch (error) {
     console.error('Error fetching user customizations:', error)
@@ -247,60 +298,90 @@ router.post('/user/customize', authenticate, async (req: AuthRequest, res: Respo
     }
 
     const { themeId, customColors } = validation.data
+    const { isGlobal = false } = req.body
+    const deviceInfo = getDeviceInfo(req)
 
     // Check if theme exists
-    const theme = await prisma.themeTemplate.findUnique({
+    const templateCheck = await prisma.themeTemplate.findUnique({
       where: { id: themeId }
     })
 
-    if (!theme) {
+    if (!templateCheck) {
       return res.status(404).json({
         success: false,
         error: 'Theme template not found'
       })
     }
 
-    // Deactivate all other customizations for this user
-    await prisma.userThemeCustomization.updateMany({
-      where: { userId },
-      data: { isActive: false }
-    })
+    let result
 
-    // Create or update customization
-    const customization = await prisma.userThemeCustomization.upsert({
-      where: {
-        userId_themeId: {
+    if (isGlobal) {
+      // Update or create global theme
+      result = await prisma.userThemeGlobal.upsert({
+        where: { userId },
+        update: {
+          themeId,
+          customColors,
+          updatedAt: new Date()
+        },
+        create: {
           userId,
-          themeId
-        }
-      },
-      update: {
-        customColors,
-        isActive: true,
-        updatedAt: new Date()
-      },
-      create: {
-        userId,
-        themeId,
-        customColors,
-        isActive: true
-      },
-      include: {
-        theme: true
-      }
-    })
+          themeId,
+          customColors
+        },
+        include: { theme: true }
+      })
 
-    res.json({
-      success: true,
-      data: {
-        id: customization.id,
-        themeId: customization.themeId,
-        themeName: customization.theme.name,
-        themeDisplayName: customization.theme.displayName,
-        customColors: customization.customColors,
-        isActive: customization.isActive
-      }
-    })
+      res.json({
+        success: true,
+        data: {
+          id: result.id,
+          themeId: result.themeId,
+          themeName: result.theme.name,
+          themeDisplayName: result.theme.displayName,
+          customColors: result.customColors,
+          scope: 'global'
+        }
+      })
+    } else {
+      // Update or create device-specific theme
+      result = await prisma.userThemeCustomization.upsert({
+        where: {
+          userId_deviceIdentifier: {
+            userId,
+            deviceIdentifier: deviceInfo.deviceIdentifier
+          }
+        },
+        update: {
+          themeId,
+          customColors,
+          updatedAt: new Date()
+        },
+        create: {
+          userId,
+          themeId,
+          customColors,
+          deviceType: deviceInfo.deviceType,
+          deviceOS: deviceInfo.deviceOS,
+          deviceIdentifier: deviceInfo.deviceIdentifier,
+          deviceName: deviceInfo.deviceName
+        },
+        include: { theme: true }
+      })
+
+      res.json({
+        success: true,
+        data: {
+          id: result.id,
+          themeId: result.themeId,
+          themeName: result.theme.name,
+          themeDisplayName: result.theme.displayName,
+          customColors: result.customColors,
+          scope: 'device',
+          deviceName: result.deviceName
+        }
+      })
+    }
   } catch (error) {
     console.error('Error saving theme customization:', error)
     res.status(500).json({
@@ -314,7 +395,10 @@ router.post('/user/customize', authenticate, async (req: AuthRequest, res: Respo
 router.post('/user/set-active', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user!.id
-    const { themeId } = req.body
+    const { themeId, isGlobal = true } = req.body
+    const deviceInfo = getDeviceInfo(req)
+
+    console.log('Set active theme request:', { userId, themeId, isGlobal, deviceInfo })
 
     if (!themeId) {
       return res.status(400).json({
@@ -324,68 +408,86 @@ router.post('/user/set-active', authenticate, async (req: AuthRequest, res: Resp
     }
 
     // Check if theme exists
-    const theme = await prisma.themeTemplate.findUnique({
+    const themeTemplate = await prisma.themeTemplate.findUnique({
       where: { id: themeId }
     })
 
-    if (!theme) {
+    if (!themeTemplate) {
       return res.status(404).json({
         success: false,
         error: 'Theme template not found'
       })
     }
 
-    // Deactivate all customizations
-    await prisma.userThemeCustomization.updateMany({
-      where: { userId },
-      data: { isActive: false }
-    })
+    let result
 
-    // Check if user already has a customization for this theme
-    const existingCustomization = await prisma.userThemeCustomization.findUnique({
-      where: {
-        userId_themeId: {
+    if (isGlobal) {
+      console.log('Applying theme globally')
+
+      // Update or create global theme
+      result = await prisma.userThemeGlobal.upsert({
+        where: { userId },
+        update: {
+          themeId,
+          customColors: {},
+          updatedAt: new Date()
+        },
+        create: {
           userId,
-          themeId
+          themeId,
+          customColors: {}
         }
-      }
-    })
+      })
 
-    // Create or update customization, preserving existing custom colors if they exist
-    const customization = await prisma.userThemeCustomization.upsert({
-      where: {
-        userId_themeId: {
+      res.json({
+        success: true,
+        data: {
+          id: result.id,
+          themeId: result.themeId,
+          themeName: themeTemplate.name,
+          themeDisplayName: themeTemplate.displayName,
+          scope: 'global'
+        }
+      })
+    } else {
+      console.log('Applying theme to device only')
+
+      // Create or update device-specific theme
+      result = await prisma.userThemeCustomization.upsert({
+        where: {
+          userId_deviceIdentifier: {
+            userId,
+            deviceIdentifier: deviceInfo.deviceIdentifier
+          }
+        },
+        update: {
+          themeId,
+          customColors: {},
+          updatedAt: new Date()
+        },
+        create: {
           userId,
-          themeId
+          themeId,
+          customColors: {},
+          deviceType: deviceInfo.deviceType,
+          deviceOS: deviceInfo.deviceOS,
+          deviceIdentifier: deviceInfo.deviceIdentifier,
+          deviceName: deviceInfo.deviceName
         }
-      },
-      update: {
-        isActive: true,
-        // Keep existing customColors if they exist, otherwise use empty object
-        customColors: existingCustomization?.customColors || {},
-        updatedAt: new Date()
-      },
-      create: {
-        userId,
-        themeId,
-        customColors: {},
-        isActive: true
-      },
-      include: {
-        theme: true
-      }
-    })
+      })
 
-    res.json({
-      success: true,
-      data: {
-        id: customization.id,
-        themeId: customization.themeId,
-        themeName: customization.theme.name,
-        themeDisplayName: customization.theme.displayName,
-        isActive: customization.isActive
-      }
-    })
+      res.json({
+        success: true,
+        data: {
+          id: result.id,
+          themeId: result.themeId,
+          themeName: themeTemplate.name,
+          themeDisplayName: themeTemplate.displayName,
+          scope: 'device',
+          deviceName: result.deviceName
+        }
+      })
+    }
   } catch (error) {
     console.error('Error setting active theme:', error)
     res.status(500).json({
@@ -400,32 +502,58 @@ router.delete('/user/customizations/:id', authenticate, async (req: AuthRequest,
   try {
     const userId = req.user!.id
     const { id } = req.params
+    const { scope } = req.query as { scope?: 'global' | 'device' }
 
-    // Check if customization exists and belongs to user
-    const customization = await prisma.userThemeCustomization.findFirst({
-      where: {
-        id,
-        userId
+    if (scope === 'global') {
+      // Check if it's the user's global theme
+      const globalTheme = await prisma.userThemeGlobal.findFirst({
+        where: { id, userId }
+      })
+
+      if (!globalTheme) {
+        return res.status(404).json({
+          success: false,
+          error: 'Global theme not found'
+        })
       }
-    })
 
-    if (!customization) {
-      return res.status(404).json({
-        success: false,
-        error: 'Customization not found'
+      // Don't delete, just reset to default theme
+      const defaultTemplate = await prisma.themeTemplate.findFirst({
+        where: { isDefault: true }
+      }) || await prisma.themeTemplate.findFirst({
+        orderBy: { name: 'asc' }
+      })
+
+      if (defaultTemplate) {
+        await prisma.userThemeGlobal.update({
+          where: { id },
+          data: {
+            themeId: defaultTemplate.id,
+            customColors: {}
+          }
+        })
+      }
+    } else {
+      // Delete device-specific customization
+      const deviceTheme = await prisma.userThemeCustomization.findFirst({
+        where: { id, userId }
+      })
+
+      if (!deviceTheme) {
+        return res.status(404).json({
+          success: false,
+          error: 'Device customization not found'
+        })
+      }
+
+      await prisma.userThemeCustomization.delete({
+        where: { id }
       })
     }
 
-    // If deleting active customization, we allow it (for reset functionality)
-    // The frontend will handle setting a new theme or falling back to defaults
-
-    await prisma.userThemeCustomization.delete({
-      where: { id }
-    })
-
     res.json({
       success: true,
-      message: 'Customization deleted successfully'
+      message: 'Customization removed successfully'
     })
   } catch (error) {
     console.error('Error deleting customization:', error)

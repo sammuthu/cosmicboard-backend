@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Protocol</key>
+    <string>s3</string>
+    <key>Vendor</key>
+    <string>localstack</string>
+    <key>Description</key>
+    <string>LocalStack S3</string>
+    <key>Default Hostname</key>
+    <string>localhost</string>
+    <key>Default Port</key>
+    <string>4566</string>
+    <key>Hostname Configurable</key>
+    <true/>
+    <key>Port Configurable</key>
+    <true/>
+    <key>Username Configurable</key>
+    <true/>
+    <key>Username Placeholder</key>
+    <string>test</string>
+    <key>Password Placeholder</key>
+    <string>test</string>
+    <key>Properties</key>
+    <dict>
+        <key>s3service.s3-endpoint.hostname.default</key>
+        <string>localhost</string>
+        <key>s3service.s3-endpoint.port.default</key>
+        <string>4566</string>
+        <key>s3service.disable-dns-buckets</key>
+        <string>true</string>
+        <key>s3service.https-only</key>
+        <string>false</string>
+    </dict>
+    <key>Region</key>
+    <string>us-east-1</string>
+    <key>Regions</key>
+    <dict>
+        <key>us-east-1</key>
+        <string>US East (N. Virginia)</string>
+    </dict>
+</dict>
+</plist>
