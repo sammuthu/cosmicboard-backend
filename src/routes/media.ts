@@ -8,7 +8,7 @@ import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import multer from 'multer';
-import * as crypto from 'crypto';
+import { randomUUID } from 'crypto';
 import * as path from 'path';
 
 const router = Router();
@@ -25,6 +25,7 @@ const s3Client = new S3Client({
 });
 
 const BUCKET_NAME = process.env.AWS_S3_BUCKET || 'cosmicspace-media';
+console.log('Using S3 bucket:', BUCKET_NAME);
 
 // Configure multer for memory storage
 const upload = multer({ storage: multer.memoryStorage() });
@@ -69,16 +70,22 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
 // Upload new media
 router.post('/upload', authenticate, upload.single('file'), async (req: AuthRequest, res: Response) => {
   try {
+    console.log('Upload request received:', {
+      file: req.file?.originalname,
+      body: req.body,
+      user: req.user?.id
+    });
+
     if (!req.file) {
       return res.status(400).json({ error: 'No file provided' });
     }
-    
+
     const { projectId, type, name } = req.body;
-    
+
     if (!projectId || !type) {
       return res.status(400).json({ error: 'projectId and type are required' });
     }
-    
+
     // Verify project exists and belongs to user
     const project = await prisma.project.findFirst({
       where: {
@@ -86,26 +93,44 @@ router.post('/upload', authenticate, upload.single('file'), async (req: AuthRequ
         userId: req.user!.id
       }
     });
-    
+
     if (!project) {
+      console.error('Project not found:', { projectId, userId: req.user!.id });
       return res.status(404).json({ error: 'Project not found' });
     }
     
     // Generate unique file ID and S3 key
-    const fileId = crypto.randomUUID();
+    const fileId = randomUUID();
     const fileName = name || req.file.originalname;
     const fileExtension = path.extname(fileName).slice(1).toLowerCase(); // Remove dot and lowercase
-    const s3Key = `${type.toLowerCase()}/${projectId}/${fileId}/${fileName}`;
+
+    // Map type to folder name: document -> scrolls, photo -> photos, screenshot -> screenshots
+    const folderMapping: Record<string, string> = {
+      document: 'scrolls',
+      pdf: 'scrolls', // backwards compatibility
+      photo: 'photos',
+      screenshot: 'screenshots'
+    };
+    const folder = folderMapping[type.toLowerCase()] || type.toLowerCase();
+    const s3Key = `${folder}/${projectId}/${fileId}/${fileName}`;
     
     // Upload to S3
+    console.log('Uploading to S3:', { bucket: BUCKET_NAME, key: s3Key });
+
     const uploadCommand = new PutObjectCommand({
       Bucket: BUCKET_NAME,
       Key: s3Key,
       Body: req.file.buffer,
       ContentType: req.file.mimetype
     });
-    
-    await s3Client.send(uploadCommand);
+
+    try {
+      await s3Client.send(uploadCommand);
+      console.log('S3 upload successful');
+    } catch (s3Error) {
+      console.error('S3 upload error:', s3Error);
+      throw s3Error;
+    }
     
     // Generate URL
     const url = process.env.AWS_ENDPOINT 
@@ -141,9 +166,14 @@ router.post('/upload', authenticate, upload.single('file'), async (req: AuthRequ
     });
     
     res.json(media);
-  } catch (error) {
-    console.error('Error uploading media:', error);
-    res.status(500).json({ error: 'Failed to upload media' });
+  } catch (error: any) {
+    console.error('Error uploading media:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code
+    });
+    res.status(500).json({ error: error.message || 'Failed to upload media' });
   }
 });
 

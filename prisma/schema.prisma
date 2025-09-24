@@ -203,6 +203,7 @@ enum MediaType {
   PHOTO
   SCREENSHOT
   PDF
+  DOCUMENT
 }
 
 model Media {
