@@ -104,15 +104,17 @@ router.post('/upload', authenticate, upload.single('file'), async (req: AuthRequ
     const fileName = name || req.file.originalname;
     const fileExtension = path.extname(fileName).slice(1).toLowerCase(); // Remove dot and lowercase
 
-    // Map type to folder name: document -> scrolls, photo -> photos, screenshot -> screenshots
-    const folderMapping: Record<string, string> = {
-      document: 'scrolls',
-      pdf: 'scrolls', // backwards compatibility
-      photo: 'photos',
-      screenshot: 'screenshots'
+    // Map type to folder name and database type
+    // For scrolls/documents, we accept any file type
+    const typeMapping: Record<string, { folder: string; dbType: string }> = {
+      document: { folder: 'scrolls', dbType: 'DOCUMENT' },
+      pdf: { folder: 'scrolls', dbType: 'PDF' }, // backwards compatibility
+      photo: { folder: 'photos', dbType: 'PHOTO' },
+      screenshot: { folder: 'screenshots', dbType: 'SCREENSHOT' }
     };
-    const folder = folderMapping[type.toLowerCase()] || type.toLowerCase();
-    const s3Key = `${folder}/${projectId}/${fileId}/${fileName}`;
+
+    const mapping = typeMapping[type.toLowerCase()] || { folder: 'scrolls', dbType: 'DOCUMENT' };
+    const s3Key = `${mapping.folder}/${projectId}/${fileId}/${fileName}`;
     
     // Upload to S3
     console.log('Uploading to S3:', { bucket: BUCKET_NAME, key: s3Key });
@@ -143,7 +145,7 @@ router.post('/upload', authenticate, upload.single('file'), async (req: AuthRequ
         id: fileId,
         projectId,
         userId: req.user!.id,
-        type: type.toUpperCase(),
+        type: mapping.dbType as any, // Use mapped database type
         name: fileName,
         url,
         size: req.file.size,
