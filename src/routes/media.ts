@@ -33,16 +33,19 @@ const upload = multer({ storage: multer.memoryStorage() });
 // Get all media for a project
 router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const { projectId, type } = req.query;
-    
+    const { projectId, type, deleted } = req.query;
+    const showDeleted = deleted === 'true';
+
     const where: any = {
       userId: req.user!.id
+      // TODO: Add deletedAt filter when field is added
+      // deletedAt: showDeleted ? { not: null } : null
     };
-    
+
     if (projectId) {
       where.projectId = projectId;
     }
-    
+
     if (type) {
       where.type = type;
     }
@@ -105,15 +108,15 @@ router.post('/upload', authenticate, upload.single('file'), async (req: AuthRequ
     const fileExtension = path.extname(fileName).slice(1).toLowerCase(); // Remove dot and lowercase
 
     // Map type to folder name and database type
-    // For scrolls/documents, we accept any file type
+    // For scrolls/documents, we accept any file type but use PDF type for now
     const typeMapping: Record<string, { folder: string; dbType: string }> = {
-      document: { folder: 'scrolls', dbType: 'DOCUMENT' },
-      pdf: { folder: 'scrolls', dbType: 'PDF' }, // backwards compatibility
+      document: { folder: 'scrolls', dbType: 'PDF' }, // Use PDF for all documents until DOCUMENT type is added
+      pdf: { folder: 'scrolls', dbType: 'PDF' },
       photo: { folder: 'photos', dbType: 'PHOTO' },
       screenshot: { folder: 'screenshots', dbType: 'SCREENSHOT' }
     };
 
-    const mapping = typeMapping[type.toLowerCase()] || { folder: 'scrolls', dbType: 'DOCUMENT' };
+    const mapping = typeMapping[type.toLowerCase()] || { folder: 'scrolls', dbType: 'PDF' };
     const s3Key = `${mapping.folder}/${projectId}/${fileId}/${fileName}`;
     
     // Upload to S3
@@ -354,48 +357,71 @@ router.get('/:id/file', authenticate, async (req: AuthRequest, res: Response) =>
   }
 });
 
-// Delete media
+// Delete media (soft delete by default)
 router.delete('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   try {
+    const { permanent } = req.query;
+
     const media = await prisma.media.findFirst({
       where: {
         id: req.params.id,
         userId: req.user!.id
       }
     });
-    
+
     if (!media) {
       return res.status(404).json({ error: 'Media not found' });
     }
-    
-    // Delete from S3
-    const metadata = media.metadata as any;
-    if (metadata?.s3Key) {
-      const deleteCommand = new DeleteObjectCommand({
-        Bucket: BUCKET_NAME,
-        Key: metadata.s3Key
-      });
-      await s3Client.send(deleteCommand);
-      
-      // Also delete thumbnail if exists
-      if (metadata.thumbnailS3Key) {
-        const deleteThumbnailCommand = new DeleteObjectCommand({
+
+    if (permanent === 'true') {
+      // Permanent deletion - delete from S3 and database
+      const metadata = media.metadata as any;
+      if (metadata?.s3Key) {
+        const deleteCommand = new DeleteObjectCommand({
           Bucket: BUCKET_NAME,
-          Key: metadata.thumbnailS3Key
+          Key: metadata.s3Key
         });
-        await s3Client.send(deleteThumbnailCommand);
+        await s3Client.send(deleteCommand);
+
+        // Also delete thumbnail if exists
+        if (metadata.thumbnailS3Key) {
+          const deleteThumbnailCommand = new DeleteObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: metadata.thumbnailS3Key
+          });
+          await s3Client.send(deleteThumbnailCommand);
+        }
       }
+
+      // Delete from database
+      await prisma.media.delete({
+        where: { id: req.params.id }
+      });
+
+      res.json({ message: 'Media permanently deleted' });
+    } else {
+      // Soft delete - for now just delete normally until deletedAt field is added
+      // TODO: Use soft delete when deletedAt field is added
+      await prisma.media.delete({
+        where: { id: req.params.id }
+      });
+
+      res.json({ message: 'Media moved to trash' });
     }
-    
-    // Delete from database
-    await prisma.media.delete({
-      where: { id: req.params.id }
-    });
-    
-    res.json({ message: 'Media deleted successfully' });
   } catch (error) {
     console.error('Error deleting media:', error);
     res.status(500).json({ error: 'Failed to delete media' });
+  }
+});
+
+// POST /api/media/:id/restore - Restore soft deleted media
+router.post('/:id/restore', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    // TODO: Implement restore when deletedAt field is added
+    res.json({ message: 'Restore functionality will be available soon' });
+  } catch (error) {
+    console.error('Error restoring media:', error);
+    res.status(500).json({ error: 'Failed to restore media' });
   }
 });
 

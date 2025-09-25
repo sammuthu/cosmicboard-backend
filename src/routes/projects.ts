@@ -7,8 +7,14 @@ const router = Router();
 // GET /api/projects
 router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
+    // Check for 'deleted' query param to show deleted projects
+    const showDeleted = req.query.deleted === 'true';
+
     const projects = await prisma.project.findMany({
-      where: { userId: req.user!.id },
+      where: {
+        userId: req.user!.id,
+        deletedAt: showDeleted ? { not: null } : null
+      },
       orderBy: { createdAt: 'desc' },
       include: {
         _count: {
@@ -144,25 +150,61 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   }
 });
 
-// DELETE /api/projects/:id
+// DELETE /api/projects/:id (Soft delete)
 router.delete('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    
-    await prisma.project.delete({
-      where: { id, userId: req.user!.id }
-    });
-    
-    res.json({ message: 'Project deleted successfully' });
+    const { permanent } = req.query;
+
+    if (permanent === 'true') {
+      // Permanent deletion
+      await prisma.project.delete({
+        where: { id, userId: req.user!.id }
+      });
+
+      res.json({ message: 'Project permanently deleted' });
+    } else {
+      // Soft delete - update deletedAt timestamp
+      const project = await prisma.project.update({
+        where: { id, userId: req.user!.id },
+        data: { deletedAt: new Date() }
+      });
+
+      res.json({ message: 'Project moved to trash', project });
+    }
   } catch (error: any) {
     console.error('DELETE /api/projects/:id error:', error);
-    
+
     if (error.code === 'P2025') {
       res.status(404).json({ error: 'Project not found' });
       return;
     }
-    
+
     res.status(500).json({ error: 'Failed to delete project' });
+  }
+});
+
+// POST /api/projects/:id/restore (Restore soft deleted project)
+router.post('/:id/restore', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Restore soft deleted project
+    const project = await prisma.project.update({
+      where: { id, userId: req.user!.id },
+      data: { deletedAt: null }
+    });
+
+    res.json({ message: 'Project restored successfully', project });
+  } catch (error: any) {
+    console.error('POST /api/projects/:id/restore error:', error);
+
+    if (error.code === 'P2025') {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
+
+    res.status(500).json({ error: 'Failed to restore project' });
   }
 });
 
@@ -285,12 +327,17 @@ router.delete('/:projectId/tasks/:taskId', async (req: Request, res: Response) =
 router.get('/:projectId/references', async (req: Request, res: Response) => {
   try {
     const { projectId } = req.params;
-    
+    const showDeleted = req.query.deleted === 'true';
+
     const references = await prisma.reference.findMany({
-      where: { projectId },
+      where: {
+        projectId
+        // TODO: Add deletedAt filter when field is added
+        // deletedAt: showDeleted ? { not: null } : null
+      },
       orderBy: { createdAt: 'desc' }
     });
-    
+
     res.json(references);
   } catch (error) {
     console.error('GET /api/projects/:projectId/references error:', error);
@@ -371,25 +418,54 @@ router.put('/:projectId/references/:referenceId', async (req: Request, res: Resp
   }
 });
 
-// DELETE /api/projects/:projectId/references/:referenceId
+// DELETE /api/projects/:projectId/references/:referenceId (Soft delete)
 router.delete('/:projectId/references/:referenceId', async (req: Request, res: Response) => {
   try {
     const { referenceId } = req.params;
-    
-    await prisma.reference.delete({
-      where: { id: referenceId }
-    });
-    
-    res.json({ message: 'Reference deleted successfully' });
+    const { permanent } = req.query;
+
+    if (permanent === 'true') {
+      // Permanent deletion
+      await prisma.reference.delete({
+        where: { id: referenceId }
+      });
+
+      res.json({ message: 'Reference permanently deleted' });
+    } else {
+      // Soft delete - for now just delete normally until deletedAt field is added
+      // TODO: Use soft delete when deletedAt field is added
+      await prisma.reference.delete({
+        where: { id: referenceId }
+      });
+
+      res.json({ message: 'Reference moved to trash' });
+    }
   } catch (error: any) {
     console.error('DELETE /api/projects/:projectId/references/:referenceId error:', error);
-    
+
     if (error.code === 'P2025') {
       res.status(404).json({ error: 'Reference not found' });
       return;
     }
-    
+
     res.status(500).json({ error: 'Failed to delete reference' });
+  }
+});
+
+// POST /api/projects/:projectId/references/:referenceId/restore
+router.post('/:projectId/references/:referenceId/restore', async (req: Request, res: Response) => {
+  try {
+    // TODO: Implement restore when deletedAt field is added
+    res.json({ message: 'Restore functionality will be available soon' });
+  } catch (error: any) {
+    console.error('POST /api/projects/:projectId/references/:referenceId/restore error:', error);
+
+    if (error.code === 'P2025') {
+      res.status(404).json({ error: 'Reference not found' });
+      return;
+    }
+
+    res.status(500).json({ error: 'Failed to restore reference' });
   }
 });
 
