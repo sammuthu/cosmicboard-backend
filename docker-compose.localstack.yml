@@ -20,7 +20,7 @@ services:
       # Pro features (if you have LocalStack Pro)
       # - LOCALSTACK_AUTH_TOKEN=your-auth-token
     volumes:
-      - "${TMPDIR:-/tmp}/localstack:/var/lib/localstack"
+      - localstack_data:/var/lib/localstack
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "./localstack-init:/docker-entrypoint-initaws.d"
     networks:
@@ -53,4 +53,6 @@ networks:
 
 volumes:
   postgres_data:
+    driver: local
+  localstack_data:
     driver: local

@@ -139,11 +139,36 @@ else
         docker start cosmicspace-localstack
         print_success "LocalStack container started"
     else
-        print_status "Starting LocalStack..."
-        npm run localstack:start > /dev/null 2>&1 || {
-            print_warning "LocalStack startup encountered issues, continuing anyway..."
-        }
-        print_success "LocalStack started"
+        print_status "Creating LocalStack container with persistent storage..."
+        docker run -d \
+            --name cosmicspace-localstack \
+            -e SERVICES=s3,ses,secretsmanager \
+            -e DEBUG=1 \
+            -e DATA_DIR=/tmp/localstack/data \
+            -e PERSISTENCE=1 \
+            -e AWS_DEFAULT_REGION=us-east-1 \
+            -e HOSTNAME_EXTERNAL=localhost \
+            -v cosmicboard-backend_localstack_data:/var/lib/localstack \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -p 4566:4566 \
+            -p 4510-4559:4510-4559 \
+            localstack/localstack:latest
+        print_success "LocalStack container created and started"
+
+        # Wait for LocalStack to be ready
+        print_status "Waiting for LocalStack to be ready..."
+        sleep 5
+
+        # Initialize AWS resources
+        print_status "Initializing AWS resources (S3 buckets, SES)..."
+        docker exec cosmicspace-localstack sh -c '
+            awslocal s3 mb s3://cosmicspace-media 2>/dev/null || true
+            awslocal s3 mb s3://cosmicspace-backups 2>/dev/null || true
+            awslocal ses verify-email-identity --email-address noreply@cosmicspace.app 2>/dev/null || true
+            awslocal ses verify-email-identity --email-address nmuthu@gmail.com 2>/dev/null || true
+            awslocal ses verify-email-identity --email-address sammuthu@me.com 2>/dev/null || true
+        ' > /dev/null 2>&1
+        print_success "AWS resources initialized"
     fi
 
     # Wait a bit for LocalStack to initialize
