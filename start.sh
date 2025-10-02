@@ -85,7 +85,7 @@ else
                 -e POSTGRES_DB=cosmicspace \
                 -e PGDATA=/data/postgres \
                 -v cosmicboard-backend_postgres_data:/data/postgres \
-                -p 5432:5432 \
+                -p 5454:5432 \
                 postgres:15-alpine
             print_success "PostgreSQL container recreated and started"
         else
@@ -183,7 +183,7 @@ print_success "Prisma client generated"
 # Step 6: Apply migrations only if --migrate flag is passed
 if [ "$1" == "--migrate" ] || [ "$2" == "--migrate" ]; then
     print_status "Applying database migrations..."
-    DATABASE_URL=postgresql://admin:localdev123@localhost:5432/cosmicspace npx prisma migrate deploy 2>/dev/null || {
+    DATABASE_URL=postgresql://admin:localdev123@localhost:5454/cosmicspace npx prisma migrate deploy 2>/dev/null || {
         print_warning "Some migrations may already be applied, continuing..."
     }
     print_success "Database migrations applied"

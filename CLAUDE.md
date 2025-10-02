@@ -6,6 +6,49 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **NEVER use `prisma migrate reset` or any destructive database commands without explicit user consent!**
 
+### ⚠️ CRITICAL: Docker Container Recreation Rules
+
+**ALWAYS include the volume mount when recreating PostgreSQL or LocalStack containers!**
+
+When recreating containers, use these EXACT commands to preserve data:
+
+#### PostgreSQL (Port 5454):
+```bash
+docker run -d \
+  --name cosmicspace-postgres \
+  -e POSTGRES_USER=admin \
+  -e POSTGRES_PASSWORD=localdev123 \
+  -e POSTGRES_DB=cosmicspace \
+  -e PGDATA=/data/postgres \
+  -v cosmicboard-backend_postgres_data:/data/postgres \
+  -p 5454:5432 \
+  postgres:15-alpine
+```
+
+#### LocalStack (Port 4566):
+```bash
+docker run -d \
+  --name cosmicspace-localstack \
+  -e SERVICES=s3,ses,secretsmanager \
+  -e DEBUG=1 \
+  -e DATA_DIR=/tmp/localstack/data \
+  -e PERSISTENCE=1 \
+  -e AWS_DEFAULT_REGION=us-east-1 \
+  -e HOSTNAME_EXTERNAL=localhost \
+  -v cosmicboard-backend_localstack_data:/var/lib/localstack \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -p 4566:4566 \
+  -p 4510-4559:4510-4559 \
+  localstack/localstack:latest
+```
+
+**Key Points:**
+- Port numbers are just network mappings - changing them does NOT affect data
+- Data is stored in Docker volumes, NOT in containers
+- ALWAYS use `-v volumename:/path` to attach volumes
+- Without volume attachment, you create a fresh empty database/S3
+- Volumes persist until explicitly deleted with `docker volume rm`
+
 ### Database Management Guidelines:
 1. **Always backup data before migrations**: Use `npx tsx scripts/backup-data.ts`
 2. **Use incremental migrations**: Never reset the database, use `prisma migrate dev` to create new migrations
@@ -123,12 +166,14 @@ npx tsx scripts/test-*.ts # Run individual test scripts
 
 ### Required
 ```bash
-DATABASE_URL=postgresql://admin:localdev123@localhost:5432/cosmicspace
+DATABASE_URL=postgresql://admin:localdev123@localhost:5454/cosmicspace
 PORT=7779
 NODE_ENV=development
 JWT_SECRET=your-secret-key
 JWT_REFRESH_SECRET=your-refresh-secret
 ```
+
+**Note**: PostgreSQL runs on port **5454** (not default 5432) to avoid conflicts with other projects.
 
 ### LocalStack/AWS
 ```bash
@@ -212,9 +257,13 @@ npx tsx scripts/restore-data.ts     # Restore from backup
 
 ## Docker Containers
 
-- **cosmicspace-postgres**: PostgreSQL 15 database (port 5432)
+- **cosmicspace-postgres**: PostgreSQL 15 database (port **5454** - custom to avoid conflicts)
 - **cosmicspace-localstack**: AWS LocalStack simulation (port 4566)
 - **cosmicspace-redis**: Redis cache (port 6379, optional)
+
+### Data Persistence Volumes
+- **cosmicboard-backend_postgres_data**: PostgreSQL data (survives container restarts)
+- **cosmicboard-backend_localstack_data**: LocalStack S3 data (survives container restarts)
 
 ## Scripts Directory
 
