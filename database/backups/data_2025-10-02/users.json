@@ -1,0 +1,42 @@
+[
+  {
+    "id": "6b0a6f4f-002f-40cb-babe-95908a565f45",
+    "email": "nmuthu@gmail.com",
+    "name": "Nmuthu",
+    "avatar": null,
+    "createdAt": "2025-09-12T12:48:16.090Z",
+    "updatedAt": "2025-09-18T12:16:28.057Z",
+    "username": null,
+    "phone": null,
+    "bio": null,
+    "emailVerified": "2025-09-18T12:16:28.056Z",
+    "phoneVerified": null,
+    "lastLogin": "2025-09-12T20:07:39.536Z",
+    "isActive": true,
+    "metadata": null,
+    "authMethods": [
+      {
+        "id": "a0ab0c5b-1a2c-4401-b75f-aad2a339d8f6",
+        "userId": "6b0a6f4f-002f-40cb-babe-95908a565f45",
+        "provider": "EMAIL",
+        "providerId": null,
+        "email": "nmuthu@gmail.com",
+        "phone": null,
+        "passwordHash": null,
+        "metadata": null,
+        "createdAt": "2025-09-12T12:48:16.090Z",
+        "updatedAt": "2025-09-12T12:48:16.090Z"
+      }
+    ],
+    "globalTheme": {
+      "id": "0065bb96-f788-4608-8e80-5b5d1547029c",
+      "userId": "6b0a6f4f-002f-40cb-babe-95908a565f45",
+      "themeId": "cmfmkolua0006m6o7f75qbnwa",
+      "customColors": {},
+      "metadata": null,
+      "createdAt": "2025-09-24T16:24:41.698Z",
+      "updatedAt": "2025-09-24T16:46:05.837Z"
+    },
+    "themeCustomizations": []
+  }
+]

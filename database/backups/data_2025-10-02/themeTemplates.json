@@ -1,0 +1,458 @@
+[
+  {
+    "id": "cmfmkolu40000m6o705qscjcb",
+    "name": "moon",
+    "displayName": "Moon",
+    "description": "Dark blue theme with cool tones",
+    "isDefault": true,
+    "colors": {
+      "text": {
+        "muted": "#94a3b8",
+        "accent": "#60a5fa",
+        "primary": "#f1f5f9",
+        "secondary": "#cbd5e1"
+      },
+      "status": {
+        "info": "#3b82f6",
+        "error": "#ef4444",
+        "success": "#10b981",
+        "warning": "#f59e0b"
+      },
+      "buttons": {
+        "primary": {
+          "text": "#ffffff",
+          "hover": "#2563eb",
+          "background": "#3b82f6"
+        },
+        "secondary": {
+          "text": "#60a5fa",
+          "hover": "rgba(59, 130, 246, 0.3)",
+          "background": "rgba(59, 130, 246, 0.2)"
+        }
+      },
+      "prismCard": {
+        "background": {
+          "to": "rgba(17, 24, 39, 0.9)",
+          "via": "rgba(31, 41, 55, 0.9)",
+          "from": "rgba(17, 24, 39, 0.9)"
+        },
+        "borderColor": "rgba(148, 163, 184, 0.2)",
+        "glowGradient": {
+          "to": "#eab308",
+          "via": "#ec4899",
+          "from": "#a855f7"
+        }
+      },
+      "parentBackground": {
+        "to": "#312e81",
+        "via": "#1e3a8a",
+        "from": "#1e293b"
+      }
+    },
+    "metadata": {
+      "version": "1.0.0",
+      "createdBy": "system"
+    },
+    "createdAt": "2025-09-16T13:12:21.388Z",
+    "updatedAt": "2025-09-16T13:12:21.388Z"
+  },
+  {
+    "id": "cmfmkolu60001m6o75b37ln1c",
+    "name": "sun",
+    "displayName": "Sun",
+    "description": "Warm orange and amber tones",
+    "isDefault": false,
+    "colors": {
+      "text": {
+        "muted": "#fcd34d",
+        "accent": "#fbbf24",
+        "primary": "#fef3c7",
+        "secondary": "#fde68a"
+      },
+      "status": {
+        "info": "#0891b2",
+        "error": "#dc2626",
+        "success": "#84cc16",
+        "warning": "#f59e0b"
+      },
+      "buttons": {
+        "primary": {
+          "text": "#ffffff",
+          "hover": "#d97706",
+          "background": "#f59e0b"
+        },
+        "secondary": {
+          "text": "#fbbf24",
+          "hover": "rgba(245, 158, 11, 0.3)",
+          "background": "rgba(245, 158, 11, 0.2)"
+        }
+      },
+      "prismCard": {
+        "background": {
+          "to": "rgba(17, 24, 39, 0.9)",
+          "via": "rgba(31, 41, 55, 0.9)",
+          "from": "rgba(17, 24, 39, 0.9)"
+        },
+        "borderColor": "rgba(251, 191, 36, 0.2)",
+        "glowGradient": {
+          "to": "#facc15",
+          "via": "#fbbf24",
+          "from": "#f97316"
+        }
+      },
+      "parentBackground": {
+        "to": "#713f12",
+        "via": "#78350f",
+        "from": "#7c2d12"
+      }
+    },
+    "metadata": {
+      "version": "1.0.0",
+      "createdBy": "system"
+    },
+    "createdAt": "2025-09-16T13:12:21.391Z",
+    "updatedAt": "2025-09-16T13:12:21.391Z"
+  },
+  {
+    "id": "cmfmkolu70002m6o7nqto65ng",
+    "name": "daylight",
+    "displayName": "Daylight",
+    "description": "Bright and light theme with warm tones",
+    "isDefault": false,
+    "colors": {
+      "text": {
+        "muted": "#78716c",
+        "accent": "#ea580c",
+        "primary": "#292524",
+        "secondary": "#57534e"
+      },
+      "status": {
+        "info": "#0284c7",
+        "error": "#dc2626",
+        "success": "#65a30d",
+        "warning": "#d97706"
+      },
+      "buttons": {
+        "primary": {
+          "text": "#ffffff",
+          "hover": "#ea580c",
+          "background": "#f97316"
+        },
+        "secondary": {
+          "text": "#ea580c",
+          "hover": "rgba(249, 115, 22, 0.2)",
+          "background": "rgba(249, 115, 22, 0.1)"
+        }
+      },
+      "prismCard": {
+        "background": {
+          "to": "rgba(255, 255, 255, 0.9)",
+          "via": "rgba(254, 249, 195, 0.9)",
+          "from": "rgba(255, 255, 255, 0.9)"
+        },
+        "borderColor": "rgba(251, 191, 36, 0.3)",
+        "glowGradient": {
+          "to": "#facc15",
+          "via": "#fb923c",
+          "from": "#fbbf24"
+        }
+      },
+      "parentBackground": {
+        "to": "#fefce8",
+        "via": "#fff7ed",
+        "from": "#fffbeb"
+      }
+    },
+    "metadata": {
+      "version": "1.0.0",
+      "createdBy": "system"
+    },
+    "createdAt": "2025-09-16T13:12:21.392Z",
+    "updatedAt": "2025-09-16T13:12:21.392Z"
+  },
+  {
+    "id": "cmfmkolu80003m6o70284ncy5",
+    "name": "comet",
+    "displayName": "Comet",
+    "description": "Deep purple and violet cosmic theme",
+    "isDefault": false,
+    "colors": {
+      "text": {
+        "muted": "#d8b4fe",
+        "accent": "#c084fc",
+        "primary": "#f3e8ff",
+        "secondary": "#e9d5ff"
+      },
+      "status": {
+        "info": "#8b5cf6",
+        "error": "#ef4444",
+        "success": "#22c55e",
+        "warning": "#f59e0b"
+      },
+      "buttons": {
+        "primary": {
+          "text": "#ffffff",
+          "hover": "#9333ea",
+          "background": "#a855f7"
+        },
+        "secondary": {
+          "text": "#c084fc",
+          "hover": "rgba(168, 85, 247, 0.3)",
+          "background": "rgba(168, 85, 247, 0.2)"
+        }
+      },
+      "prismCard": {
+        "background": {
+          "to": "rgba(17, 24, 39, 0.9)",
+          "via": "rgba(31, 41, 55, 0.9)",
+          "from": "rgba(17, 24, 39, 0.9)"
+        },
+        "borderColor": "rgba(168, 85, 247, 0.2)",
+        "glowGradient": {
+          "to": "#ec4899",
+          "via": "#8b5cf6",
+          "from": "#a855f7"
+        }
+      },
+      "parentBackground": {
+        "to": "#312e81",
+        "via": "#5b21b6",
+        "from": "#581c87"
+      }
+    },
+    "metadata": {
+      "version": "1.0.0",
+      "createdBy": "system"
+    },
+    "createdAt": "2025-09-16T13:12:21.393Z",
+    "updatedAt": "2025-09-16T13:12:21.393Z"
+  },
+  {
+    "id": "cmfmkolu90004m6o7ibton359",
+    "name": "earth",
+    "displayName": "Earth",
+    "description": "Natural blue and green tones",
+    "isDefault": false,
+    "colors": {
+      "text": {
+        "muted": "#6ee7b7",
+        "accent": "#34d399",
+        "primary": "#ecfdf5",
+        "secondary": "#a7f3d0"
+      },
+      "status": {
+        "info": "#06b6d4",
+        "error": "#f87171",
+        "success": "#22c55e",
+        "warning": "#eab308"
+      },
+      "buttons": {
+        "primary": {
+          "text": "#ffffff",
+          "hover": "#059669",
+          "background": "#10b981"
+        },
+        "secondary": {
+          "text": "#34d399",
+          "hover": "rgba(16, 185, 129, 0.3)",
+          "background": "rgba(16, 185, 129, 0.2)"
+        }
+      },
+      "prismCard": {
+        "background": {
+          "to": "rgba(17, 24, 39, 0.9)",
+          "via": "rgba(31, 41, 55, 0.9)",
+          "from": "rgba(17, 24, 39, 0.9)"
+        },
+        "borderColor": "rgba(20, 184, 166, 0.2)",
+        "glowGradient": {
+          "to": "#22c55e",
+          "via": "#14b8a6",
+          "from": "#3b82f6"
+        }
+      },
+      "parentBackground": {
+        "to": "#14532d",
+        "via": "#134e4a",
+        "from": "#1e3a8a"
+      }
+    },
+    "metadata": {
+      "version": "1.0.0",
+      "createdBy": "system"
+    },
+    "createdAt": "2025-09-16T13:12:21.393Z",
+    "updatedAt": "2025-09-16T13:12:21.393Z"
+  },
+  {
+    "id": "cmfmkolu90005m6o7mwwpabtx",
+    "name": "rocket",
+    "displayName": "Rocket",
+    "description": "Sleek gray and metallic theme",
+    "isDefault": false,
+    "colors": {
+      "text": {
+        "muted": "#6b7280",
+        "accent": "#9ca3af",
+        "primary": "#f3f4f6",
+        "secondary": "#d1d5db"
+      },
+      "status": {
+        "info": "#3b82f6",
+        "error": "#ef4444",
+        "success": "#10b981",
+        "warning": "#f59e0b"
+      },
+      "buttons": {
+        "primary": {
+          "text": "#ffffff",
+          "hover": "#374151",
+          "background": "#4b5563"
+        },
+        "secondary": {
+          "text": "#d1d5db",
+          "hover": "rgba(75, 85, 99, 0.4)",
+          "background": "rgba(75, 85, 99, 0.3)"
+        }
+      },
+      "prismCard": {
+        "background": {
+          "to": "rgba(17, 24, 39, 0.95)",
+          "via": "rgba(31, 41, 55, 0.95)",
+          "from": "rgba(17, 24, 39, 0.95)"
+        },
+        "borderColor": "rgba(156, 163, 175, 0.2)",
+        "glowGradient": {
+          "to": "#d1d5db",
+          "via": "#9ca3af",
+          "from": "#6b7280"
+        }
+      },
+      "parentBackground": {
+        "to": "#18181b",
+        "via": "#1e293b",
+        "from": "#111827"
+      }
+    },
+    "metadata": {
+      "version": "1.0.0",
+      "createdBy": "system"
+    },
+    "createdAt": "2025-09-16T13:12:21.394Z",
+    "updatedAt": "2025-09-16T13:12:21.394Z"
+  },
+  {
+    "id": "cmfmkolua0006m6o7f75qbnwa",
+    "name": "saturn",
+    "displayName": "Saturn",
+    "description": "Purple to pink gradient theme",
+    "isDefault": false,
+    "colors": {
+      "text": {
+        "muted": "#f0abfc",
+        "accent": "#e879f9",
+        "primary": "#fdf4ff",
+        "secondary": "#fae8ff"
+      },
+      "status": {
+        "info": "#a855f7",
+        "error": "#ef4444",
+        "success": "#22c55e",
+        "warning": "#f59e0b"
+      },
+      "buttons": {
+        "primary": {
+          "text": "#ffffff",
+          "hover": "#c026d3",
+          "background": "#d946ef"
+        },
+        "secondary": {
+          "text": "#e879f9",
+          "hover": "rgba(217, 70, 239, 0.3)",
+          "background": "rgba(217, 70, 239, 0.2)"
+        }
+      },
+      "prismCard": {
+        "background": {
+          "to": "rgba(17, 24, 39, 0.9)",
+          "via": "rgba(31, 41, 55, 0.9)",
+          "from": "rgba(17, 24, 39, 0.9)"
+        },
+        "borderColor": "rgba(217, 70, 239, 0.2)",
+        "glowGradient": {
+          "to": "#ec4899",
+          "via": "#d946ef",
+          "from": "#a855f7"
+        }
+      },
+      "parentBackground": {
+        "to": "#831843",
+        "via": "#701a75",
+        "from": "#581c87"
+      }
+    },
+    "metadata": {
+      "version": "1.0.0",
+      "createdBy": "system"
+    },
+    "createdAt": "2025-09-16T13:12:21.395Z",
+    "updatedAt": "2025-09-16T13:12:21.395Z"
+  },
+  {
+    "id": "cmfmkolub0007m6o73md0x4xt",
+    "name": "sparkle",
+    "displayName": "Sparkle",
+    "description": "Pink and rose magical theme",
+    "isDefault": false,
+    "colors": {
+      "text": {
+        "muted": "#fbcfe8",
+        "accent": "#f9a8d4",
+        "primary": "#fdf2f8",
+        "secondary": "#fce7f3"
+      },
+      "status": {
+        "info": "#ec4899",
+        "error": "#ef4444",
+        "success": "#22c55e",
+        "warning": "#f59e0b"
+      },
+      "buttons": {
+        "primary": {
+          "text": "#ffffff",
+          "hover": "#db2777",
+          "background": "#ec4899"
+        },
+        "secondary": {
+          "text": "#f9a8d4",
+          "hover": "rgba(236, 72, 153, 0.3)",
+          "background": "rgba(236, 72, 153, 0.2)"
+        }
+      },
+      "prismCard": {
+        "background": {
+          "to": "rgba(17, 24, 39, 0.9)",
+          "via": "rgba(31, 41, 55, 0.9)",
+          "from": "rgba(17, 24, 39, 0.9)"
+        },
+        "borderColor": "rgba(236, 72, 153, 0.2)",
+        "glowGradient": {
+          "to": "#a855f7",
+          "via": "#f43f5e",
+          "from": "#ec4899"
+        }
+      },
+      "parentBackground": {
+        "to": "#581c87",
+        "via": "#881337",
+        "from": "#831843"
+      }
+    },
+    "metadata": {
+      "version": "1.0.0",
+      "createdBy": "system"
+    },
+    "createdAt": "2025-09-16T13:12:21.396Z",
+    "updatedAt": "2025-09-16T13:12:21.396Z"
+  }
+]
