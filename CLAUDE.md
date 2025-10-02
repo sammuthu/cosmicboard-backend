@@ -14,11 +14,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 5. **Default user**: Apply all existing data to `nmuthu@gmail.com` unless already associated with a userId
 
 ### Before ANY database schema changes:
-1. Run backup: `npx tsx scripts/backup-data.ts`
+1. Run backup: `cd database && node export-data.js` (creates timestamped backup in `database/backups/`)
 2. Create migration: `npx prisma migrate dev --create-only`
 3. Review migration file before applying
 4. Apply migration: `npx prisma migrate dev`
-5. If issues occur, restore: `npx tsx scripts/restore-data.ts`
+5. If issues occur, restore: `cd database && node import-data.js data_YYYY-MM-DD`
+
+**CRITICAL**: The most recent and complete backups are in `/database/backups/`, NOT `/db-backup/`!
 
 ## Project Overview
 
@@ -210,9 +212,9 @@ npx tsx scripts/restore-data.ts     # Restore from backup
 
 ## Docker Containers
 
-- **cosmicspace-postgres**: PostgreSQL 15 database
-- **cosmicspace-localstack**: AWS LocalStack simulation
-- **cosmicspace-redis**: Redis cache (optional)
+- **cosmicspace-postgres**: PostgreSQL 15 database (port 5432)
+- **cosmicspace-localstack**: AWS LocalStack simulation (port 4566)
+- **cosmicspace-redis**: Redis cache (port 6379, optional)
 
 ## Scripts Directory
 
@@ -223,3 +225,28 @@ Key utility scripts in `/scripts`:
 - **migrate-media-to-s3.ts**: Migrate local files to S3
 - **test-*.ts**: Various test scripts for auth, email, S3
 - **setup-email.sh**: Configure email settings
+
+## File IDs and Project Isolation
+
+The codebase uses CUID for file IDs and implements strict project isolation:
+- Each media file is scoped to a project via `projectId`
+- File paths include the file ID for unique storage (e.g., `/uploads/photo/{fileId}/originals/`)
+- Always ensure file operations respect project boundaries to prevent cross-project access
+- Recent fixes resolved file ID conflicts and ensured proper project isolation
+
+## Testing Pattern
+
+Test scripts in `/scripts` follow a consistent pattern:
+- `test-*.ts` scripts are executable via `npx tsx scripts/test-{feature}.ts`
+- `./scripts/test-all.sh` runs all test scripts sequentially
+- No Jest tests currently implemented despite test framework being configured
+- Test scripts are integration tests that verify actual AWS/database connectivity
+
+## Soft Delete Implementation
+
+The schema includes `deletedAt` fields for soft deletes:
+- **Project**: Has `deletedAt DateTime?` field (marked as TODO for migration)
+- **Reference**: Has `deletedAt DateTime?` field (marked as TODO for migration)
+- **Media**: Has `deletedAt DateTime?` field (marked as TODO for migration)
+- **Tasks**: Use `status` enum (ACTIVE, COMPLETED, DELETED, ARCHIVED) instead of `deletedAt`
+- When implementing soft deletes, filter queries with `where: { deletedAt: null }`

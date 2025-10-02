@@ -3,8 +3,6 @@
 # CosmicBoard Backend Startup Script
 # This script handles the complete startup process for the backend server
 
-set -e  # Exit on error
-
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -14,7 +12,7 @@ NC='\033[0m' # No Color
 
 # Function to print colored output
 print_status() {
-    [ "$VERBOSE" = "1" ] && echo -e "${BLUE}[INFO]${NC} $1"
+    echo -e "${BLUE}[INFO]${NC} $1"
 }
 
 print_success() {
@@ -22,7 +20,7 @@ print_success() {
 }
 
 print_warning() {
-    [ "$VERBOSE" = "1" ] && echo -e "${YELLOW}[WARNING]${NC} $1"
+    echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
 print_error() {
@@ -38,6 +36,12 @@ kill_existing_backend() {
         sleep 1
     fi
 }
+
+echo ""
+echo -e "${BLUE}╔════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║${NC}  🚀 CosmicBoard Backend Startup Script              ${BLUE}║${NC}"
+echo -e "${BLUE}╚════════════════════════════════════════════════════════╝${NC}"
+echo ""
 
 # Kill existing backend process
 kill_existing_backend
@@ -68,19 +72,39 @@ print_status "Checking PostgreSQL container..."
 if docker ps | grep -q "cosmicspace-postgres.*Up"; then
     print_success "PostgreSQL container is already running"
 else
-    print_status "Starting PostgreSQL container..."
-    docker start cosmicspace-postgres 2>/dev/null || {
-        print_warning "Creating new PostgreSQL container..."
+    # Check if container exists but is stopped
+    if docker ps -a | grep -q "cosmicspace-postgres"; then
+        print_status "PostgreSQL container exists but is stopped, starting it..."
+        if docker start cosmicspace-postgres 2>&1 | grep -q "Error"; then
+            print_error "Failed to start existing container. Removing and recreating..."
+            docker rm -f cosmicspace-postgres > /dev/null 2>&1
+            docker run -d \
+                --name cosmicspace-postgres \
+                -e POSTGRES_USER=admin \
+                -e POSTGRES_PASSWORD=localdev123 \
+                -e POSTGRES_DB=cosmicspace \
+                -e PGDATA=/data/postgres \
+                -v cosmicboard-backend_postgres_data:/data/postgres \
+                -p 5432:5432 \
+                postgres:15-alpine
+            print_success "PostgreSQL container recreated and started"
+        else
+            print_success "PostgreSQL container started"
+        fi
+    else
+        print_status "Creating new PostgreSQL container..."
         docker run -d \
             --name cosmicspace-postgres \
             -e POSTGRES_USER=admin \
             -e POSTGRES_PASSWORD=localdev123 \
             -e POSTGRES_DB=cosmicspace \
-            -p 5432:5432 \
+            -e PGDATA=/data/postgres \
+            -v cosmicboard-backend_postgres_data:/data/postgres \
+            -p 5454:5432 \
             postgres:15-alpine
-    }
-    print_success "PostgreSQL container started"
-    
+        print_success "PostgreSQL container created and started"
+    fi
+
     # Wait for PostgreSQL to be ready
     print_status "Waiting for PostgreSQL to be ready..."
     sleep 5
@@ -88,8 +112,18 @@ fi
 
 # Step 3: Check PostgreSQL connection
 print_status "Checking database connection..."
+RETRY_COUNT=0
+MAX_RETRIES=15
 until docker exec cosmicspace-postgres pg_isready -U admin > /dev/null 2>&1; do
-    print_warning "Waiting for PostgreSQL to accept connections..."
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+        print_error "PostgreSQL failed to start after $MAX_RETRIES attempts"
+        print_error "Checking container logs:"
+        docker logs --tail 20 cosmicspace-postgres
+        print_error "You may need to run: docker rm -f cosmicspace-postgres && ./start.sh"
+        exit 1
+    fi
+    print_warning "Waiting for PostgreSQL to accept connections... (attempt $RETRY_COUNT/$MAX_RETRIES)"
     sleep 2
 done
 print_success "PostgreSQL is ready"
@@ -99,16 +133,26 @@ print_status "Checking LocalStack container..."
 if docker ps | grep -q "cosmicspace-localstack.*Up"; then
     print_success "LocalStack container is already running"
 else
-    print_status "Starting LocalStack..."
-    npm run localstack:start > /dev/null 2>&1 || {
-        print_warning "LocalStack startup encountered issues, continuing anyway..."
-    }
-    print_success "LocalStack started"
+    # Check if container exists but is stopped
+    if docker ps -a | grep -q "cosmicspace-localstack"; then
+        print_status "LocalStack container exists but is stopped, starting it..."
+        docker start cosmicspace-localstack
+        print_success "LocalStack container started"
+    else
+        print_status "Starting LocalStack..."
+        npm run localstack:start > /dev/null 2>&1 || {
+            print_warning "LocalStack startup encountered issues, continuing anyway..."
+        }
+        print_success "LocalStack started"
+    fi
+
+    # Wait a bit for LocalStack to initialize
+    sleep 2
 fi
 
 # Step 5: Generate Prisma client (always do this in case schema changed)
 print_status "Generating Prisma client..."
-npm run prisma:generate
+npm run prisma:generate > /dev/null 2>&1
 print_success "Prisma client generated"
 
 # Step 6: Apply migrations only if --migrate flag is passed
@@ -130,17 +174,24 @@ if [ "$1" == "--seed" ]; then
 fi
 
 # Step 9: Start the development server
-print_status "Starting backend server on port 7779..."
-print_success "Server is starting at http://localhost:7779"
-print_status "API Health check: http://localhost:7779/api/health"
+echo ""
+echo -e "${BLUE}╔════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║${NC}  ✅ All services ready - Starting backend server    ${BLUE}║${NC}"
+echo -e "${BLUE}╚════════════════════════════════════════════════════════╝${NC}"
+echo ""
+print_success "Backend URL: http://localhost:7779"
+print_success "Health check: http://localhost:7779/api/health"
 print_status "Prisma Studio: Run 'npm run prisma:studio' in another terminal"
 echo ""
-print_status "Press Ctrl+C to stop the server"
+echo -e "${YELLOW}Press Ctrl+C to stop the server${NC}"
+echo ""
+echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "${BLUE}Backend Logs:${NC}"
+echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
 # Start the server with appropriate configuration
 if [ -f .env.localstack ]; then
-    print_status "Starting with LocalStack configuration..."
     npm run dev:localstack
 else
     npm run dev
