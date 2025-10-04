@@ -1,4 +1,4 @@
-const { S3Client, CreateBucketCommand, ListBucketsCommand } = require('@aws-sdk/client-s3');
+const { S3Client, CreateBucketCommand, ListBucketsCommand, PutBucketCorsCommand } = require('@aws-sdk/client-s3');
 
 // Configure S3 client for LocalStack
 const s3Client = new S3Client({
@@ -34,12 +34,32 @@ async function setupLocalStack() {
           LocationConstraint: 'us-east-1'
         }
       });
-      
+
       await s3Client.send(createCommand);
       console.log(`✅ Successfully created bucket: ${bucketName}`);
     } else {
       console.log(`✅ Bucket already exists: ${bucketName}`);
     }
+
+    // Configure CORS for the bucket
+    console.log(`\n🔧 Configuring CORS for bucket: ${bucketName}`);
+    const corsCommand = new PutBucketCorsCommand({
+      Bucket: bucketName,
+      CORSConfiguration: {
+        CORSRules: [
+          {
+            AllowedOrigins: ['http://localhost:7777', 'http://localhost:3000'],
+            AllowedMethods: ['GET', 'PUT', 'POST', 'DELETE', 'HEAD'],
+            AllowedHeaders: ['*'],
+            ExposeHeaders: ['ETag', 'Content-Length'],
+            MaxAgeSeconds: 3000
+          }
+        ]
+      }
+    });
+
+    await s3Client.send(corsCommand);
+    console.log(`✅ CORS configured for bucket: ${bucketName}`);
     
     // List buckets again to confirm
     console.log('\n📋 Final bucket list:');
