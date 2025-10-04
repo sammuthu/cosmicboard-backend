@@ -4,6 +4,7 @@ import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import multer from 'multer';
 import { randomUUID } from 'crypto';
+import sharp from 'sharp';
 
 const router = Router();
 
@@ -23,12 +24,23 @@ const BUCKET_NAME = process.env.AWS_S3_BUCKET || 'cosmicspace-media';
 // Configure multer for memory storage
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit (HEIC files can be larger)
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
+    // Accept common image formats including HEIC
+    const allowedMimes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'image/heic',
+      'image/heif'
+    ];
+
+    if (allowedMimes.includes(file.mimetype) || file.originalname.toLowerCase().endsWith('.heic')) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed'));
+      cb(new Error('Only image files are allowed (JPEG, PNG, GIF, WebP, HEIC)'));
     }
   }
 });
@@ -198,18 +210,31 @@ router.post('/profile-picture', authenticate, upload.single('file'), async (req:
     }
 
     const userId = req.user!.id;
-    const fileExtension = req.file.originalname.split('.').pop() || 'jpg';
-    const fileName = `profile-pictures/${userId}-${randomUUID()}.${fileExtension}`;
+    const fileName = `profile-pictures/${userId}-${randomUUID()}.jpg`;
+
+    // Convert image to JPEG (handles HEIC, PNG, WebP, etc.)
+    // Sharp automatically detects and converts HEIC format
+    let imageBuffer: Buffer;
+    try {
+      imageBuffer = await sharp(req.file.buffer)
+        .rotate() // Auto-rotate based on EXIF orientation
+        .jpeg({ quality: 90 }) // Convert to JPEG with high quality
+        .toBuffer();
+    } catch (conversionError) {
+      console.error('Error converting image:', conversionError);
+      return res.status(400).json({ error: 'Failed to process image. Please try a different file.' });
+    }
 
     // Upload to S3
     await s3Client.send(new PutObjectCommand({
       Bucket: BUCKET_NAME,
       Key: fileName,
-      Body: req.file.buffer,
-      ContentType: req.file.mimetype,
+      Body: imageBuffer,
+      ContentType: 'image/jpeg',
       Metadata: {
         userId,
-        uploadedAt: new Date().toISOString()
+        uploadedAt: new Date().toISOString(),
+        originalFormat: req.file.mimetype
       }
     }));
 
