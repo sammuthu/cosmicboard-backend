@@ -1,8 +1,37 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { AuthService } from '../services/auth.service';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import multer from 'multer';
+import { randomUUID } from 'crypto';
 
 const router = Router();
+
+// Configure S3 client for profile pictures
+const s3Client = new S3Client({
+  endpoint: process.env.AWS_ENDPOINT || 'http://localhost:4566',
+  region: process.env.AWS_REGION || 'us-east-1',
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || 'test',
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || 'test'
+  },
+  forcePathStyle: true
+});
+
+const BUCKET_NAME = process.env.AWS_S3_BUCKET || 'cosmicspace-media';
+
+// Configure multer for memory storage
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  }
+});
 
 // Send magic link
 router.post('/magic-link', async (req, res) => {
@@ -158,6 +187,51 @@ router.patch('/me', authenticate, async (req: AuthRequest, res) => {
   } catch (error) {
     console.error('Error updating user:', error);
     res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
+// Upload profile picture
+router.post('/profile-picture', authenticate, upload.single('file'), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const userId = req.user!.id;
+    const fileExtension = req.file.originalname.split('.').pop() || 'jpg';
+    const fileName = `profile-pictures/${userId}-${randomUUID()}.${fileExtension}`;
+
+    // Upload to S3
+    await s3Client.send(new PutObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: fileName,
+      Body: req.file.buffer,
+      ContentType: req.file.mimetype,
+      Metadata: {
+        userId,
+        uploadedAt: new Date().toISOString()
+      }
+    }));
+
+    // Construct the avatar URL
+    const avatarUrl = process.env.AWS_ENDPOINT
+      ? `${process.env.AWS_ENDPOINT}/${BUCKET_NAME}/${fileName}`
+      : `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
+
+    // Update user's avatar in database
+    const user = await AuthService.updateUser(userId, { avatar: avatarUrl });
+
+    res.json({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      username: user.username,
+      avatar: user.avatar,
+      bio: user.bio,
+    });
+  } catch (error) {
+    console.error('Error uploading profile picture:', error);
+    res.status(500).json({ error: 'Failed to upload profile picture' });
   }
 });
 
