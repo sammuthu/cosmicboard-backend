@@ -76,31 +76,32 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
 // POST /api/projects
 router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const { name, description } = req.body;
-    
+    const { name, description, priority = 'NEBULA' } = req.body;
+
     if (!name) {
       res.status(400).json({ error: 'Project name is required' });
       return;
     }
-    
+
     const project = await prisma.project.create({
-      data: { 
-        name, 
+      data: {
+        name,
         description,
+        priority: priority as any, // Convert to enum (SUPERNOVA, STELLAR, NEBULA)
         userId: req.user!.id,
         metadata: {} // Initialize with empty JSON object
       }
     });
-    
+
     res.status(201).json({ ...project, _id: project.id });
   } catch (error: any) {
     console.error('POST /api/projects error:', error);
-    
+
     if (error.code === 'P2002') {
       res.status(400).json({ error: 'Project name already exists' });
       return;
     }
-    
+
     res.status(500).json({ error: 'Failed to create project' });
   }
 });
@@ -130,23 +131,57 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
 router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, description } = req.body;
-    
+    const { name, description, priority } = req.body;
+
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (priority !== undefined) updateData.priority = priority; // SUPERNOVA, STELLAR, NEBULA
+
     const project = await prisma.project.update({
       where: { id, userId: req.user!.id },
-      data: { name, description }
+      data: updateData
     });
-    
+
     res.json({ ...project, _id: project.id });
   } catch (error: any) {
     console.error('PUT /api/projects/:id error:', error);
-    
+
     if (error.code === 'P2025') {
       res.status(404).json({ error: 'Project not found' });
       return;
     }
-    
+
     res.status(500).json({ error: 'Failed to update project' });
+  }
+});
+
+// PATCH /api/projects/:id/priority
+router.patch('/:id/priority', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { priority } = req.body;
+
+    if (!priority || !['SUPERNOVA', 'STELLAR', 'NEBULA'].includes(priority)) {
+      res.status(400).json({ error: 'Invalid priority. Must be SUPERNOVA, STELLAR, or NEBULA' });
+      return;
+    }
+
+    const project = await prisma.project.update({
+      where: { id, userId: req.user!.id },
+      data: { priority: priority as any }
+    });
+
+    res.json({ ...project, _id: project.id });
+  } catch (error: any) {
+    console.error('PATCH /api/projects/:id/priority error:', error);
+
+    if (error.code === 'P2025') {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
+
+    res.status(500).json({ error: 'Failed to update project priority' });
   }
 });
 

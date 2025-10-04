@@ -70,6 +70,7 @@ model Project {
   name        String
   description String?
   userId      String
+  priority    Priority    @default(NEBULA)
   archived    Boolean     @default(false)
   deletedAt   DateTime?   // Soft delete timestamp - TODO: migrate
   metadata    Json?
@@ -83,6 +84,7 @@ model Project {
   @@index([archived])
   @@index([userId])
   @@index([deletedAt])
+  @@index([priority])
 }
 
 model Task {
