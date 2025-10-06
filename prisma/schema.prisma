@@ -33,6 +33,7 @@ model User {
   Media                      Media[]
   themeCustomizations        UserThemeCustomization[]
   globalTheme                UserThemeGlobal?
+  avatarHistory              AvatarHistory[]
 
   @@index([email])
 }
@@ -292,4 +293,20 @@ model UserThemeCustomization {
   @@index([userId])
   @@index([themeId])
   @@index([userId, deviceType])
+}
+
+model AvatarHistory {
+  id         String   @id @default(cuid())
+  userId     String
+  url        String
+  isActive   Boolean  @default(false)
+  uploadedAt DateTime @default(now())
+  deletedAt  DateTime?
+  metadata   Json?    // Store original format, size, etc.
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isActive])
+  @@index([deletedAt])
 }

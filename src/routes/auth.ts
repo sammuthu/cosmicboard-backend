@@ -1,10 +1,11 @@
 import { Router, Response } from 'express';
 import { AuthService } from '../services/auth.service';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import multer from 'multer';
 import { randomUUID } from 'crypto';
 import sharp from 'sharp';
+import { prisma } from '../lib/database';
 
 const router = Router();
 
@@ -243,6 +244,31 @@ router.post('/profile-picture', authenticate, upload.single('file'), async (req:
       ? `${process.env.AWS_ENDPOINT}/${BUCKET_NAME}/${fileName}`
       : `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
 
+    // Deactivate previous active avatars
+    await prisma.avatarHistory.updateMany({
+      where: {
+        userId,
+        isActive: true
+      },
+      data: {
+        isActive: false
+      }
+    });
+
+    // Save to avatar history
+    await prisma.avatarHistory.create({
+      data: {
+        userId,
+        url: avatarUrl,
+        isActive: true,
+        metadata: {
+          originalFormat: req.file.mimetype,
+          size: req.file.size,
+          fileName: req.file.originalname
+        }
+      }
+    });
+
     // Update user's avatar in database
     const user = await AuthService.updateUser(userId, { avatar: avatarUrl });
 
@@ -257,6 +283,108 @@ router.post('/profile-picture', authenticate, upload.single('file'), async (req:
   } catch (error) {
     console.error('Error uploading profile picture:', error);
     res.status(500).json({ error: 'Failed to upload profile picture' });
+  }
+});
+
+// Get avatar history
+router.get('/avatar-history', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const avatars = await prisma.avatarHistory.findMany({
+      where: {
+        userId: req.user!.id,
+        deletedAt: null
+      },
+      orderBy: {
+        uploadedAt: 'desc'
+      }
+    });
+
+    res.json(avatars);
+  } catch (error) {
+    console.error('Error fetching avatar history:', error);
+    res.status(500).json({ error: 'Failed to fetch avatar history' });
+  }
+});
+
+// Set active avatar
+router.patch('/avatar/:id/activate', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.id;
+
+    // Verify avatar belongs to user
+    const avatar = await prisma.avatarHistory.findFirst({
+      where: { id, userId, deletedAt: null }
+    });
+
+    if (!avatar) {
+      return res.status(404).json({ error: 'Avatar not found' });
+    }
+
+    // Deactivate all avatars
+    await prisma.avatarHistory.updateMany({
+      where: { userId, isActive: true },
+      data: { isActive: false }
+    });
+
+    // Activate selected avatar
+    await prisma.avatarHistory.update({
+      where: { id },
+      data: { isActive: true }
+    });
+
+    // Update user's active avatar
+    await AuthService.updateUser(userId, { avatar: avatar.url });
+
+    res.json({ success: true, avatar: avatar.url });
+  } catch (error) {
+    console.error('Error activating avatar:', error);
+    res.status(500).json({ error: 'Failed to activate avatar' });
+  }
+});
+
+// Delete avatar
+router.delete('/avatar/:id', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.id;
+
+    // Verify avatar belongs to user
+    const avatar = await prisma.avatarHistory.findFirst({
+      where: { id, userId, deletedAt: null }
+    });
+
+    if (!avatar) {
+      return res.status(404).json({ error: 'Avatar not found' });
+    }
+
+    // Don't allow deleting the active avatar
+    if (avatar.isActive) {
+      return res.status(400).json({ error: 'Cannot delete active avatar. Set a different avatar as active first.' });
+    }
+
+    // Soft delete
+    await prisma.avatarHistory.update({
+      where: { id },
+      data: { deletedAt: new Date() }
+    });
+
+    // Optionally delete from S3
+    try {
+      const key = avatar.url.split('/').slice(-2).join('/'); // Extract key from URL
+      await s3Client.send(new DeleteObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: key
+      }));
+    } catch (s3Error) {
+      console.error('Error deleting from S3:', s3Error);
+      // Continue even if S3 deletion fails
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting avatar:', error);
+    res.status(500).json({ error: 'Failed to delete avatar' });
   }
 });
 

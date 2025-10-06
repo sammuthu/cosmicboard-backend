@@ -44,24 +44,52 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
     
     // Transform the data to match the expected format
     const projectsWithCounts = projects.map(project => {
-      const active = project.tasks.filter(t => t.status === 'ACTIVE').length;
+      // Radar (Tasks) counts - for now, treating all ACTIVE as created (not started)
+      // Later we can add a field to track task progress
+      const created = project.tasks.filter(t => t.status === 'ACTIVE').length;
+      const inProgress = 0; // TODO: Add progress tracking to tasks
       const completed = project.tasks.filter(t => t.status === 'COMPLETED').length;
       const deleted = project.tasks.filter(t => t.status === 'DELETED').length;
-      
-      const totalReferences = project._count.references;
-      const snippets = project.references.filter(r => r.category === 'SNIPPET').length;
-      // Count PDF media items as documentation
-      const documentation = project.media.filter(m => m.type === 'PDF').length;
-      
+
+      // Neural Notes - References with category SNIPPET or NOTE
+      const neuralNotes = project.references.filter(r =>
+        r.category === 'SNIPPET' || r.category === 'NOTE'
+      ).length;
+
+      // Moments - Photo media
+      const moments = project.media.filter(m => m.type === 'PHOTO').length;
+
+      // Snaps - Screenshot media
+      const snaps = project.media.filter(m => m.type === 'SCREENSHOT').length;
+
+      // Scrolls - PDF and Document media
+      const scrolls = project.media.filter(m =>
+        m.type === 'PDF' || m.type === 'DOCUMENT'
+      ).length;
+
       // Remove the included relations from the response
       const { tasks, references, media, _count, ...projectData } = project;
-      
+
       return {
         ...projectData,
         _id: project.id, // For backward compatibility
-        counts: { 
-          tasks: { active, completed, deleted },
-          references: { total: totalReferences, snippets, documentation }
+        counts: {
+          radar: {
+            created,     // Not started tasks
+            inProgress,  // Started but not completed
+            completed    // Completed tasks
+          },
+          neuralNotes,   // Notes and snippets
+          moments,       // Photos
+          snaps,         // Screenshots
+          scrolls,       // PDFs and documents
+          // Keep old format for backward compatibility
+          tasks: { active: created, completed, deleted },
+          references: {
+            total: project._count.references,
+            snippets: project.references.filter(r => r.category === 'SNIPPET').length,
+            documentation: project.media.filter(m => m.type === 'PDF').length
+          }
         }
       };
     });
