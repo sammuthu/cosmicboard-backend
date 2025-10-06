@@ -296,32 +296,65 @@ router.get('/:projectId/tasks', authenticate, async (req: AuthRequest, res: Resp
   }
 });
 
+// GET /api/projects/:projectId/tasks/:taskId
+router.get('/:projectId/tasks/:taskId', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { projectId, taskId } = req.params;
+
+    // First verify the project belongs to the user
+    const project = await prisma.project.findFirst({
+      where: { id: projectId, userId: req.user!.id }
+    });
+
+    if (!project) {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
+
+    const task = await prisma.task.findFirst({
+      where: { id: taskId, projectId }
+    });
+
+    if (!task) {
+      res.status(404).json({ error: 'Task not found' });
+      return;
+    }
+
+    res.json(task);
+  } catch (error) {
+    console.error('GET /api/projects/:projectId/tasks/:taskId error:', error);
+    res.status(500).json({ error: 'Failed to fetch task' });
+  }
+});
+
 // POST /api/projects/:projectId/tasks
-router.post('/:projectId/tasks', async (req: Request, res: Response) => {
+router.post('/:projectId/tasks', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { projectId } = req.params;
-    const { title, content, priority = 'MEDIUM', status = 'ACTIVE' } = req.body;
-    
+    const { title, content, priority = 'NEBULA', status = 'ACTIVE', tags = [], dueDate } = req.body;
+
     const task = await prisma.task.create({
       data: {
         projectId,
         title: title || content || 'Untitled Task',
         content: content || title || 'No description',
-        priority: priority as any, // Convert to enum
+        priority: priority as any, // Convert to enum (SUPERNOVA, STELLAR, NEBULA)
         status: status as any,
-        creatorId: 'temp-user-id' // TODO: Get from authenticated user
+        tags: tags || [],
+        dueDate: dueDate ? new Date(dueDate) : null,
+        creatorId: req.user!.id
       }
     });
-    
+
     res.status(201).json(task);
   } catch (error: any) {
     console.error('POST /api/projects/:projectId/tasks error:', error);
-    
+
     if (error.code === 'P2003') {
       res.status(404).json({ error: 'Project not found' });
       return;
     }
-    
+
     res.status(500).json({ error: 'Failed to create task' });
   }
 });
@@ -330,11 +363,16 @@ router.post('/:projectId/tasks', async (req: Request, res: Response) => {
 router.put('/:projectId/tasks/:taskId', async (req: Request, res: Response) => {
   try {
     const { taskId } = req.params;
-    const { content, priority, status } = req.body;
-    
+    const { title, content, priority, status, tags, dueDate } = req.body;
+
+    console.log('Updating task:', taskId, 'with body:', { title, content, priority, status, tags, dueDate });
+
     const updateData: any = {};
+    if (title !== undefined) updateData.title = title;
     if (content !== undefined) updateData.content = content;
     if (priority !== undefined) updateData.priority = priority;
+    if (tags !== undefined) updateData.tags = tags;
+    if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
     if (status !== undefined) {
       updateData.status = status;
       if (status === 'COMPLETED') {
@@ -343,21 +381,21 @@ router.put('/:projectId/tasks/:taskId', async (req: Request, res: Response) => {
         updateData.completedAt = null;
       }
     }
-    
+
     const task = await prisma.task.update({
       where: { id: taskId },
       data: updateData
     });
-    
+
     res.json(task);
   } catch (error: any) {
     console.error('PUT /api/projects/:projectId/tasks/:taskId error:', error);
-    
+
     if (error.code === 'P2025') {
       res.status(404).json({ error: 'Task not found' });
       return;
     }
-    
+
     res.status(500).json({ error: 'Failed to update task' });
   }
 });
