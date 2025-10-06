@@ -51,10 +51,8 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
       const completed = project.tasks.filter(t => t.status === 'COMPLETED').length;
       const deleted = project.tasks.filter(t => t.status === 'DELETED').length;
 
-      // Neural Notes - References with category SNIPPET or NOTE
-      const neuralNotes = project.references.filter(r =>
-        r.category === 'SNIPPET' || r.category === 'NOTE'
-      ).length;
+      // Neural Notes - All references (SNIPPET, DOCUMENTATION, LINK, NOTE)
+      const neuralNotes = project.references.length;
 
       // Moments - Photo media
       const moments = project.media.filter(m => m.type === 'PHOTO').length;
