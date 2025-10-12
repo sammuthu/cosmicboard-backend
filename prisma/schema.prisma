@@ -8,19 +8,19 @@ datasource db {
 }
 
 model User {
-  id                         String         @id @default(cuid())
-  email                      String         @unique
+  id                         String                   @id @default(cuid())
+  email                      String                   @unique
   name                       String
   avatar                     String?
-  createdAt                  DateTime       @default(now())
-  updatedAt                  DateTime       @updatedAt
+  createdAt                  DateTime                 @default(now())
+  updatedAt                  DateTime                 @updatedAt
   username                   String?
   phone                      String?
   bio                        String?
   emailVerified              DateTime?
   phoneVerified              DateTime?
   lastLogin                  DateTime?
-  isActive                   Boolean?       @default(true)
+  isActive                   Boolean?                 @default(true)
   metadata                   Json?
   authMethods                AuthMethod[]
   magicLinks                 MagicLink[]
@@ -34,6 +34,15 @@ model User {
   themeCustomizations        UserThemeCustomization[]
   globalTheme                UserThemeGlobal?
   avatarHistory              AvatarHistory[]
+
+  // Social Platform Relations
+  createdEvents     Event[]             @relation("EventCreator")
+  contentVisibility ContentVisibility[] @relation("ContentOwner")
+  engagements       ContentEngagement[] @relation("UserEngagements")
+  comments          ContentComment[]    @relation("UserComments")
+  amplifies         ContentAmplify[]    @relation("UserAmplifies")
+  connections       UserConnection[]    @relation("UserConnections")
+  connectedBy       UserConnection[]    @relation("ConnectedToUser")
 
   @@index([email])
 }
@@ -72,8 +81,9 @@ model Project {
   description String?
   userId      String
   priority    Priority    @default(NEBULA)
+  visibility  Visibility  @default(PRIVATE)
   archived    Boolean     @default(false)
-  deletedAt   DateTime?   // Soft delete timestamp - TODO: migrate
+  deletedAt   DateTime? // Soft delete timestamp - TODO: migrate
   metadata    Json?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -81,19 +91,23 @@ model Project {
   references  Reference[]
   tasks       Task[]
   media       Media[]
+  events      Event[]
 
   @@index([archived])
   @@index([userId])
   @@index([deletedAt])
   @@index([priority])
+  @@index([visibility])
 }
 
 model Task {
   id                         String     @id @default(cuid())
   projectId                  String
+  eventId                    String?
   title                      String
   content                    String
   priority                   Priority   @default(NEBULA)
+  visibility                 Visibility @default(PRIVATE)
   status                     TaskStatus @default(ACTIVE)
   tags                       String[]
   dueDate                    DateTime?
@@ -106,31 +120,36 @@ model Task {
   User_Task_assigneeIdToUser User?      @relation("Task_assigneeIdToUser", fields: [assigneeId], references: [id])
   User_Task_creatorIdToUser  User       @relation("Task_creatorIdToUser", fields: [creatorId], references: [id])
   project                    Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  event                      Event?     @relation(fields: [eventId], references: [id], onDelete: SetNull)
 
   @@index([status])
   @@index([priority])
+  @@index([visibility])
   @@index([assigneeId])
   @@index([creatorId])
   @@index([projectId])
+  @@index([eventId])
 }
 
 model Reference {
-  id        String            @id @default(cuid())
-  projectId String
-  userId    String
-  title     String
-  content   String
-  category  ReferenceCategory
-  tags      String[]
-  language  String?
-  deletedAt DateTime?         // Soft delete timestamp - TODO: migrate
-  metadata  Json?
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-  project   Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  User      User              @relation(fields: [userId], references: [id])
+  id         String            @id @default(cuid())
+  projectId  String
+  userId     String
+  title      String
+  content    String
+  category   ReferenceCategory
+  visibility Visibility        @default(PRIVATE)
+  tags       String[]
+  language   String?
+  deletedAt  DateTime? // Soft delete timestamp - TODO: migrate
+  metadata   Json?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  project    Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  User       User              @relation(fields: [userId], references: [id])
 
   @@index([category])
+  @@index([visibility])
   @@index([projectId])
   @@index([userId])
   @@index([deletedAt])
@@ -213,11 +232,40 @@ enum MediaType {
   DOCUMENT
 }
 
+enum Visibility {
+  PUBLIC
+  CONTACTS
+  PRIVATE
+}
+
+enum ContentType {
+  PROJECT
+  TASK
+  NOTE
+  PHOTO
+  SCREENSHOT
+  PDF
+  EVENT
+}
+
+enum EngagementType {
+  LIKE
+  BOOKMARK
+  VIEW
+}
+
+enum ConnectionType {
+  CONTACT
+  FOLLOWING
+  BLOCKED
+}
+
 model Media {
-  id           String    @id @default(cuid())
+  id           String     @id @default(cuid())
   projectId    String
   userId       String
   type         MediaType
+  visibility   Visibility @default(PRIVATE)
   name         String
   url          String
   thumbnailUrl String?
@@ -225,28 +273,29 @@ model Media {
   mimeType     String
   deletedAt    DateTime? // Soft delete timestamp - TODO: migrate
   metadata     Json?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
-  project      Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
   @@index([userId])
   @@index([type])
+  @@index([visibility])
   @@index([deletedAt])
 }
 
 model ThemeTemplate {
-  id                String                   @id @default(cuid())
-  name              String                   @unique
-  displayName       String
-  description       String?
-  isDefault         Boolean                  @default(false)
-  colors            Json                     // Stores all color configurations
-  metadata          Json?                    // Additional theme metadata
-  createdAt         DateTime                 @default(now())
-  updatedAt         DateTime                 @updatedAt
+  id          String   @id @default(cuid())
+  name        String   @unique
+  displayName String
+  description String?
+  isDefault   Boolean  @default(false)
+  colors      Json // Stores all color configurations
+  metadata    Json? // Additional theme metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   userCustomizations UserThemeCustomization[]
   userGlobalThemes   UserThemeGlobal[]
@@ -255,39 +304,39 @@ model ThemeTemplate {
 }
 
 model UserThemeGlobal {
-  id               String         @id @default(cuid())
-  userId           String         @unique
-  themeId          String
-  customColors     Json           // User's customized colors (empty object for no customization)
-  metadata         Json?          // Additional metadata
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  themeId      String
+  customColors Json // User's customized colors (empty object for no customization)
+  metadata     Json? // Additional metadata
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  theme            ThemeTemplate  @relation(fields: [themeId], references: [id], onDelete: Cascade)
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme ThemeTemplate @relation(fields: [themeId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([themeId])
 }
 
 model UserThemeCustomization {
-  id               String         @id @default(cuid())
-  userId           String
-  themeId          String
-  customColors     Json           // User's customized colors
+  id           String @id @default(cuid())
+  userId       String
+  themeId      String
+  customColors Json // User's customized colors
 
   // Device fingerprinting fields (required for device-specific themes)
-  deviceType       String         // 'desktop', 'mobile', 'tablet'
-  deviceOS         String         // 'windows', 'macos', 'linux', 'ios', 'android', 'browser'
-  deviceIdentifier String         // Unique device identifier
-  deviceName       String         // User-friendly device name
+  deviceType       String // 'desktop', 'mobile', 'tablet'
+  deviceOS         String // 'windows', 'macos', 'linux', 'ios', 'android', 'browser'
+  deviceIdentifier String // Unique device identifier
+  deviceName       String // User-friendly device name
 
-  metadata         Json?          // Additional customization metadata
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  metadata  Json? // Additional customization metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  theme            ThemeTemplate  @relation(fields: [themeId], references: [id], onDelete: Cascade)
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme ThemeTemplate @relation(fields: [themeId], references: [id], onDelete: Cascade)
 
   @@unique([userId, deviceIdentifier])
   @@index([userId])
@@ -296,17 +345,136 @@ model UserThemeCustomization {
 }
 
 model AvatarHistory {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   userId     String
   url        String
-  isActive   Boolean  @default(false)
-  uploadedAt DateTime @default(now())
+  isActive   Boolean   @default(false)
+  uploadedAt DateTime  @default(now())
   deletedAt  DateTime?
-  metadata   Json?    // Store original format, size, etc.
+  metadata   Json? // Store original format, size, etc.
 
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([userId, isActive])
   @@index([deletedAt])
+}
+
+// ============================================
+// Social Platform Models (Phase S1)
+// ============================================
+
+model Event {
+  id          String     @id @default(cuid())
+  projectId   String
+  name        String
+  description String?
+  startDate   DateTime?
+  endDate     DateTime?
+  location    String?
+  visibility  Visibility @default(PRIVATE)
+  createdBy   String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  deletedAt   DateTime?
+  metadata    Json?
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  creator User    @relation("EventCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  tasks   Task[]
+
+  @@index([projectId])
+  @@index([createdBy])
+  @@index([startDate, endDate])
+  @@index([deletedAt])
+  @@index([visibility])
+}
+
+model ContentVisibility {
+  id          String      @id @default(cuid())
+  contentType ContentType
+  contentId   String
+  visibility  Visibility  @default(PRIVATE)
+  ownerId     String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  owner User @relation("ContentOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([contentType, contentId])
+  @@index([visibility])
+  @@index([ownerId])
+  @@index([contentType, contentId])
+}
+
+model ContentEngagement {
+  id             String         @id @default(cuid())
+  contentType    ContentType
+  contentId      String
+  userId         String
+  engagementType EngagementType
+  createdAt      DateTime       @default(now())
+
+  user User @relation("UserEngagements", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([contentType, contentId, userId, engagementType])
+  @@index([contentType, contentId])
+  @@index([userId])
+  @@index([engagementType])
+}
+
+model ContentComment {
+  id              String      @id @default(cuid())
+  contentType     ContentType
+  contentId       String
+  userId          String
+  commentText     String
+  parentCommentId String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  deletedAt       DateTime?
+  metadata        Json?
+
+  user          User             @relation("UserComments", fields: [userId], references: [id], onDelete: Cascade)
+  parentComment ContentComment?  @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies       ContentComment[] @relation("CommentReplies")
+
+  @@index([contentType, contentId])
+  @@index([userId])
+  @@index([parentCommentId])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+model ContentAmplify {
+  id          String      @id @default(cuid())
+  contentType ContentType
+  contentId   String
+  userId      String
+  amplifyText String?
+  createdAt   DateTime    @default(now())
+
+  user User @relation("UserAmplifies", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([contentType, contentId, userId])
+  @@index([contentType, contentId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model UserConnection {
+  id              String         @id @default(cuid())
+  userId          String
+  connectedUserId String
+  connectionType  ConnectionType @default(CONTACT)
+  createdAt       DateTime       @default(now())
+  metadata        Json?
+
+  user          User @relation("UserConnections", fields: [userId], references: [id], onDelete: Cascade)
+  connectedUser User @relation("ConnectedToUser", fields: [connectedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, connectedUserId])
+  @@index([userId])
+  @@index([connectedUserId])
+  @@index([connectionType])
 }
