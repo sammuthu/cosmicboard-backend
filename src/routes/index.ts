@@ -7,6 +7,9 @@ import mediaRoutes from './media';
 import searchRoutes from './search';
 import exportImportRoutes from './export-import';
 import themeRoutes from './themes';
+import eventRoutes from './events';
+import contentVisibilityRoutes from './content-visibility';
+import discoverRoutes from './discover';
 
 const router = Router();
 
@@ -18,6 +21,9 @@ router.use('/references', referenceRoutes);
 router.use('/media', mediaRoutes);
 router.use('/search', searchRoutes);
 router.use('/themes', themeRoutes);
+router.use('/events', eventRoutes);
+router.use('/content-visibility', contentVisibilityRoutes);
+router.use('/discover', discoverRoutes);
 router.use('/', exportImportRoutes); // Export and import at root level
 
 // Health check
@@ -42,6 +48,9 @@ router.get('/', (_req, res) => {
       media: '/api/media',
       search: '/api/search',
       themes: '/api/themes',
+      events: '/api/events',
+      contentVisibility: '/api/content-visibility',
+      discover: '/api/discover',
       export: '/api/export',
       import: '/api/import',
       health: '/api/health'

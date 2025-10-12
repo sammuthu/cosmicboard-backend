@@ -34,21 +34,21 @@ router.get('/', async (req: Request, res: Response) => {
 // POST /api/references
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { projectId, title, content, url, category, priority, tags, metadata } = req.body;
-    
+    const { projectId, title, content, url, category, priority, tags, metadata, visibility = 'PRIVATE' } = req.body;
+
     if (!projectId || !title || !content) {
       return res.status(400).json({ error: 'Project ID, title, and content are required' });
     }
-    
+
     // Verify project exists
     const project = await prisma.project.findUnique({
       where: { id: projectId }
     });
-    
+
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });
     }
-    
+
     // Map category string to enum value
     const categoryMap: { [key: string]: ReferenceCategory } = {
       'documentation': 'DOCUMENTATION',
@@ -59,7 +59,7 @@ router.post('/', async (req: Request, res: Response) => {
       'reference': 'LINK', // Map reference to LINK
       'other': 'DOCUMENTATION' // Default fallback
     };
-    
+
     const reference = await prisma.reference.create({
       data: {
         projectId,
@@ -67,6 +67,7 @@ router.post('/', async (req: Request, res: Response) => {
         title,
         content,
         category: categoryMap[category?.toLowerCase()] || 'DOCUMENTATION',
+        visibility: visibility as any, // Convert to enum (PUBLIC, CONTACTS, PRIVATE)
         tags: tags || [],
         metadata: {
           ...metadata,
@@ -74,13 +75,13 @@ router.post('/', async (req: Request, res: Response) => {
         }
       }
     });
-    
+
     // Transform for backward compatibility
     const transformedReference = {
       ...reference,
       _id: reference.id
     };
-    
+
     res.status(201).json(transformedReference);
   } catch (error) {
     console.error('Error creating reference:', error);
@@ -112,14 +113,15 @@ router.get('/:id', async (req: Request, res: Response) => {
 router.put('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { title, content, url, category, priority, tags } = req.body;
-    
+    const { title, content, url, category, priority, tags, visibility } = req.body;
+
     const updateData: any = {};
-    
+
     if (title !== undefined) updateData.title = title;
     if (content !== undefined) updateData.content = content;
     if (tags !== undefined) updateData.tags = tags;
-    
+    if (visibility !== undefined) updateData.visibility = visibility; // PUBLIC, CONTACTS, PRIVATE
+
     // Handle metadata updates for url and other fields
     const currentReference = await prisma.reference.findUnique({ where: { id } });
     if (currentReference) {
@@ -128,7 +130,7 @@ router.put('/:id', async (req: Request, res: Response) => {
         updateData.metadata = { ...currentMetadata, url };
       }
     }
-    
+
     if (category !== undefined) {
       const categoryMap: { [key: string]: ReferenceCategory } = {
         'documentation': 'DOCUMENTATION',
@@ -140,20 +142,20 @@ router.put('/:id', async (req: Request, res: Response) => {
       };
       updateData.category = categoryMap[category?.toLowerCase()] || 'DOCUMENTATION';
     }
-    
+
     const reference = await prisma.reference.update({
       where: { id },
       data: updateData
     });
-    
+
     res.json({ ...reference, _id: reference.id });
   } catch (error: any) {
     console.error('PUT /api/references/:id error:', error);
-    
+
     if (error.code === 'P2025') {
       return res.status(404).json({ error: 'Reference not found' });
     }
-    
+
     res.status(500).json({ error: 'Failed to update reference' });
   }
 });

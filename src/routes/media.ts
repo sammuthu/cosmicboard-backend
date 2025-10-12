@@ -83,7 +83,7 @@ router.post('/upload', authenticate, upload.single('file'), async (req: AuthRequ
       return res.status(400).json({ error: 'No file provided' });
     }
 
-    const { projectId, type, name } = req.body;
+    const { projectId, type, name, visibility = 'PRIVATE' } = req.body;
 
     if (!projectId || !type) {
       return res.status(400).json({ error: 'projectId and type are required' });
@@ -149,6 +149,7 @@ router.post('/upload', authenticate, upload.single('file'), async (req: AuthRequ
         projectId,
         userId: req.user!.id,
         type: mapping.dbType as any, // Use mapped database type
+        visibility: visibility as any, // Convert to enum (PUBLIC, CONTACTS, PRIVATE)
         name: fileName,
         url,
         size: req.file.size,
@@ -227,22 +228,26 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
 // Update media metadata
 router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const { name } = req.body;
-    
+    const { name, visibility } = req.body;
+
     const media = await prisma.media.findFirst({
       where: {
         id: req.params.id,
         userId: req.user!.id
       }
     });
-    
+
     if (!media) {
       return res.status(404).json({ error: 'Media not found' });
     }
-    
+
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (visibility !== undefined) updateData.visibility = visibility; // PUBLIC, CONTACTS, PRIVATE
+
     const updated = await prisma.media.update({
       where: { id: req.params.id },
-      data: { name },
+      data: updateData,
       include: {
         project: {
           select: {
@@ -252,7 +257,7 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
         }
       }
     });
-    
+
     res.json(updated);
   } catch (error) {
     console.error('Error updating media:', error);

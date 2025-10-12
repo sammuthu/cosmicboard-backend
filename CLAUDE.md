@@ -2,6 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Project Overview
+
+CosmicBoard Backend - Express.js API for a collaborative task management platform with social features. Built with TypeScript, PostgreSQL/Prisma, AWS S3 (via LocalStack for dev), and magic link authentication.
+
+**Key Technologies:** Node.js 18+, Express 5, TypeScript, Prisma, PostgreSQL 15, LocalStack, AWS SDK v3, Sharp (image processing)
+
 ## ⚠️ CRITICAL DATABASE SAFETY RULES
 
 **NEVER use `prisma migrate reset` or any destructive database commands without explicit user consent!**
@@ -65,10 +71,6 @@ docker run -d \
 
 **CRITICAL**: The most recent and complete backups are in `/database/backups/`, NOT `/db-backup/`!
 
-## Project Overview
-
-CosmicBoard Backend - Express.js API with PostgreSQL/Prisma, featuring magic link authentication, AWS integration via LocalStack, and comprehensive media handling for collaborative task management.
-
 ## Essential Commands
 
 ### Development
@@ -120,13 +122,14 @@ npx tsx scripts/test-*.ts # Run individual test scripts
 - **src/services/**: Business logic layer
 
 ### Authentication System
-- **Magic Link Flow**: Email-based with 15-minute expiry
-- **6-Digit Codes**: Mobile app authentication support
+- **Magic Link Flow**: Email-based with 15-minute expiry tokens sent via SES
+- **6-Digit Codes**: Mobile app authentication support (speakeasy-based TOTP)
 - **Token Management**:
-  - Access tokens: 15 minutes (stored in-memory)
-  - Refresh tokens: 7 days (stored in database)
-  - Uses crypto.randomBytes, NOT JWT
-- **Development Mode**: Auto-seeds known development tokens for `nmuthu@gmail.com` when using LocalStack
+  - Access tokens: 15 minutes (stored in-memory in AuthService)
+  - Refresh tokens: 7 days (stored in database RefreshToken table)
+  - Uses crypto.randomBytes for token generation, NOT JWT
+- **Development Mode**: Auto-seeds known development tokens for `nmuthu@gmail.com` when using LocalStack (see src/middleware/auth.middleware.ts:60-106)
+- **Middleware**: `authenticate` (required) and `authenticateOptional` (optional auth) in src/middleware/auth.middleware.ts
 
 ### AWS Integration & LocalStack
 - **Development**: LocalStack auto-configuration for S3, SES, Secrets Manager
@@ -137,12 +140,15 @@ npx tsx scripts/test-*.ts # Run individual test scripts
 - **SES Verified Emails**: noreply@cosmicspace.app, nmuthu@gmail.com, sammuthu@me.com
 
 ### Database Schema (Prisma)
-- **Priority System**: Tasks use SUPERNOVA > STELLAR > NEBULA priorities
-- **Multi-tenant**: User-based data isolation
-- **Media Support**: Photos, screenshots, PDFs with thumbnail generation using Sharp
-- **Theme System**: Templates and user customizations (per-device or global)
-- **Soft Deletes**: Via status fields (DELETED, ARCHIVED)
-- **Key Models**: User, Project, Task, Reference, Media, ThemeTemplate, UserThemeCustomization
+- **Priority System**: Tasks use SUPERNOVA > STELLAR > NEBULA priorities (Priority enum)
+- **Multi-tenant**: User-based data isolation with strict ownership checks
+- **Media Support**: Photos, screenshots, PDFs, documents with thumbnail generation using Sharp
+- **Theme System**: Templates (ThemeTemplate) and user customizations (per-device or global via UserThemeCustomization/UserThemeGlobal)
+- **Soft Deletes**: Mixed approach - Tasks use `status` enum (ACTIVE, COMPLETED, DELETED, ARCHIVED), others use `deletedAt` timestamp
+- **Social Features (Phase S1)**: Events, ContentVisibility, ContentEngagement, ContentComment, ContentAmplify, UserConnection
+- **Visibility System**: All content has visibility (PUBLIC, CONTACTS, PRIVATE) tracked in ContentVisibility table
+- **Key Models**: User, Project, Task, Reference, Media, Event, ThemeTemplate, UserThemeCustomization, ContentVisibility, UserConnection
+- **File IDs**: Uses CUID for unique identification with project-scoped isolation
 
 ### API Patterns
 - Base path: `/api/*`
@@ -222,38 +228,77 @@ npx tsx scripts/restore-data.ts     # Restore from backup
 ```
 
 ## Current Implementation Status
-- ✅ Complete CRUD APIs for all entities
-- ✅ Magic link authentication with 6-digit codes
-- ✅ AWS integration with LocalStack fallback
-- ✅ Media upload and processing (photos, screenshots, PDFs)
-- ✅ Theme customization system with templates
-- ✅ Database backup/restore scripts
-- ✅ Development token auto-seeding
-- ⏳ Jest testing (configured, no tests)
-- ⏳ No linting configuration
-- ⏳ Redis caching (configured, not implemented)
+
+### Phase S1: Social Platform Foundation (Completed ✅)
+See PHASE-S1-PROGRESS.md for detailed report.
+
+**Completed Features:**
+- ✅ Complete CRUD APIs for all entities (Projects, Tasks, References, Media, Events)
+- ✅ Magic link authentication with 6-digit codes (speakeasy)
+- ✅ AWS integration with LocalStack for development
+- ✅ Media upload and processing (photos, screenshots, PDFs, documents)
+- ✅ Theme customization system (device-specific and global)
+- ✅ Database backup/restore scripts (scripts/backup-data.ts, scripts/restore-data.ts)
+- ✅ Development token auto-seeding (auth.middleware.ts)
+- ✅ Social platform database schema (ContentVisibility, ContentEngagement, etc.)
+- ✅ Events system with soft delete/restore
+- ✅ Visibility controls (PUBLIC, CONTACTS, PRIVATE) on all content
+- ✅ Content visibility service and sync endpoints
+
+**In Progress/TODO:**
+- ⏳ Jest testing (framework configured, no tests written)
+- ⏳ No ESLint configuration
+- ⏳ Redis caching (containers configured, not implemented in code)
+- 📋 Phase S2: Navigation redesign and public content feed (next)
 
 ## API Endpoints
 
 ### Authentication (`/api/auth`)
-- `POST /login` - Send magic link
-- `POST /verify` - Verify magic link/code
+- `POST /login` - Send magic link (creates MagicLink record)
+- `POST /verify` - Verify magic link token or 6-digit code
 - `POST /refresh` - Refresh access token
-- `POST /logout` - Logout user
+- `POST /logout` - Logout user (deletes refresh token)
 
 ### Projects (`/api/projects`)
-- Full CRUD operations
-- Nested routes for tasks and references
+- Full CRUD with visibility support (src/routes/projects.ts)
+- `GET /api/projects` - List user projects with asset counts
+- `POST /api/projects` - Create project (supports `visibility` param)
+- `PUT /api/projects/:id` - Update project (supports `visibility`)
+- Returns counts for tasks, references (by category), media (by type)
+
+### Tasks (`/api/tasks`)
+- CRUD operations with event support (src/routes/tasks.ts)
+- `POST /api/tasks` - Create task (supports `visibility`, `eventId`, `priority`, `status`)
+- `PUT /api/tasks/:id` - Update task
+- `GET /api/tasks/:id/detail` - Get single task with full details
+
+### References/Neural Notes (`/api/references`)
+- CRUD for code snippets, docs, links, notes (src/routes/references.ts)
+- Supports `category` (SNIPPET, DOCUMENTATION, LINK, NOTE) and `visibility`
 
 ### Media (`/api/media`)
-- `POST /upload` - Upload media with multipart/form-data
+- `POST /upload` - Upload media with multipart/form-data (supports `visibility`)
 - `GET /:id` - Get media metadata
-- `DELETE /:id` - Delete media
+- `PUT /:id` - Update media (supports `visibility`)
+- `DELETE /:id` - Soft delete media
+- Thumbnail generation for images, first page extraction for PDFs
+
+### Events (`/api/events`)
+- Full CRUD for project events (src/routes/events.ts)
+- `GET /api/events` - Get all events for user's projects
+- `GET /api/events/:projectId/events` - List events for specific project
+- `POST /api/events` - Create event with date range, location
+- Soft delete with restore capability
+
+### Content Visibility (`/api/content-visibility`)
+- `POST /api/content-visibility/sync` - Bulk sync all content visibility
+- `GET /api/content-visibility` - Get user's content visibility records
 
 ### Themes (`/api/themes`)
 - `GET /templates` - List all theme templates
-- `POST /customize` - Create/update user customization
-- `DELETE /customize/:id` - Delete customization
+- `POST /customize` - Create/update device-specific customization
+- `POST /global` - Set global theme for user
+- `DELETE /customize/:id` - Delete device customization
 
 ## Docker Containers
 
@@ -275,13 +320,35 @@ Key utility scripts in `/scripts`:
 - **test-*.ts**: Various test scripts for auth, email, S3
 - **setup-email.sh**: Configure email settings
 
-## File IDs and Project Isolation
+## Key Architecture Patterns
 
-The codebase uses CUID for file IDs and implements strict project isolation:
+### File IDs and Project Isolation
+- Uses CUID for all primary keys (cuid() function in Prisma)
 - Each media file is scoped to a project via `projectId`
 - File paths include the file ID for unique storage (e.g., `/uploads/photo/{fileId}/originals/`)
 - Always ensure file operations respect project boundaries to prevent cross-project access
-- Recent fixes resolved file ID conflicts and ensured proper project isolation
+- Storage service in src/services/storage.ts handles both local and S3 storage
+
+### Environment-Aware Configuration
+- src/config/environment.ts provides centralized config for dev/staging/production
+- LocalStack auto-detection: Checks for AWS_ENDPOINT containing 'localhost'
+- CORS origins configured per environment (15+ allowed origins in development)
+- Storage type switches between 'local' and 's3' based on environment
+- Config validation runs at startup (validateEnvironment function)
+
+### Service Layer Pattern
+- Business logic separated into src/services/
+- **auth.service.ts**: Token management with in-memory access token storage
+- **storage.ts**: Abstracted storage layer (local filesystem or S3)
+- **imageProcessor.ts**: Sharp-based image processing and thumbnailing
+- **email.service.ts**: SES integration for transactional emails
+- **content-visibility.service.ts**: Centralized visibility management
+
+### Error Handling
+- Express error middleware in src/server.ts:52-58
+- Standard response format: `{ error: string }` or `{ message: string }`
+- Stack traces only in development mode
+- 404 handler for undefined routes
 
 ## Testing Pattern
 
@@ -293,9 +360,62 @@ Test scripts in `/scripts` follow a consistent pattern:
 
 ## Soft Delete Implementation
 
-The schema includes `deletedAt` fields for soft deletes:
-- **Project**: Has `deletedAt DateTime?` field (marked as TODO for migration)
-- **Reference**: Has `deletedAt DateTime?` field (marked as TODO for migration)
-- **Media**: Has `deletedAt DateTime?` field (marked as TODO for migration)
-- **Tasks**: Use `status` enum (ACTIVE, COMPLETED, DELETED, ARCHIVED) instead of `deletedAt`
-- When implementing soft deletes, filter queries with `where: { deletedAt: null }`
+The schema uses a **mixed approach** for soft deletes:
+- **Tasks**: Use `status` enum with values ACTIVE, COMPLETED, DELETED, ARCHIVED (no `deletedAt` field)
+- **Project, Reference, Media, Event**: Have `deletedAt DateTime?` field for soft delete
+- When implementing soft deletes:
+  - For Tasks: Update `status` field to DELETED or ARCHIVED
+  - For others: Set `deletedAt` to current timestamp
+  - Always filter queries with `where: { deletedAt: null }` or `where: { status: 'ACTIVE' }`
+- Events support restore via `POST /api/events/:id/restore` endpoint
+
+## Troubleshooting & Debugging
+
+### Common Issues
+
+**Port 7779 already in use:**
+- The start.sh script automatically kills existing processes on port 7779
+- Manual: `lsof -ti:7779 | xargs kill -9`
+
+**PostgreSQL container won't start:**
+- Check if volume is corrupted: `docker volume ls`
+- Remove and recreate: `docker rm -f cosmicspace-postgres`
+- Then run `./start.sh` to recreate with volume mount
+
+**LocalStack S3 data lost after container restart:**
+- Verify volume is attached: `docker inspect cosmicspace-localstack | grep -A 5 Mounts`
+- Must include: `cosmicboard-backend_localstack_data:/var/lib/localstack`
+- If missing, remove container and run `./start.sh`
+
+**Migration fails with "already exists" error:**
+- Check migration status: `npx prisma migrate status`
+- Apply pending: `npx prisma migrate deploy`
+- Never use `prisma migrate reset` without backup!
+
+**Development token not working:**
+- Verify LocalStack is running: `docker ps | grep localstack`
+- Check .env.localstack is loaded: `echo $AWS_ENDPOINT`
+- Known dev tokens are auto-seeded for nmuthu@gmail.com (see auth.middleware.ts:59-106)
+
+**Media files not loading:**
+- Verify path structure: `/uploads/{mediaType}/{fileId}/originals/` or `/thumbnails/`
+- Check S3 bucket in LocalStack: `aws --endpoint-url=http://localhost:4566 s3 ls s3://cosmicspace-media/`
+- Verify MIME type headers in src/server.ts:22-43
+
+### Logs and Monitoring
+
+**Backend logs:**
+- Start server shows: Environment, Port, Storage type, Health check URL
+- Watch for: Prisma query logs (dev only), CORS warnings, AWS endpoint
+
+**Container logs:**
+```bash
+docker logs cosmicspace-postgres     # PostgreSQL logs
+docker logs cosmicspace-localstack   # LocalStack service logs
+```
+
+**Database inspection:**
+```bash
+npm run prisma:studio  # Visual database browser (port 5555)
+docker exec -it cosmicspace-postgres psql -U admin -d cosmicspace  # Direct SQL
+```

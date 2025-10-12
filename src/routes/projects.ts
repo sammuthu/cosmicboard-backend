@@ -102,7 +102,7 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
 // POST /api/projects
 router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const { name, description, priority = 'NEBULA' } = req.body;
+    const { name, description, priority = 'NEBULA', visibility = 'PRIVATE' } = req.body;
 
     if (!name) {
       res.status(400).json({ error: 'Project name is required' });
@@ -114,6 +114,7 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
         name,
         description,
         priority: priority as any, // Convert to enum (SUPERNOVA, STELLAR, NEBULA)
+        visibility: visibility as any, // Convert to enum (PUBLIC, CONTACTS, PRIVATE)
         userId: req.user!.id,
         metadata: {} // Initialize with empty JSON object
       }
@@ -157,12 +158,13 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
 router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, description, priority } = req.body;
+    const { name, description, priority, visibility } = req.body;
 
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
     if (priority !== undefined) updateData.priority = priority; // SUPERNOVA, STELLAR, NEBULA
+    if (visibility !== undefined) updateData.visibility = visibility; // PUBLIC, CONTACTS, PRIVATE
 
     const project = await prisma.project.update({
       where: { id, userId: req.user!.id },

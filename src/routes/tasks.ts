@@ -43,20 +43,22 @@ router.get('/', async (req: Request, res: Response) => {
 // POST /api/tasks
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { projectId, title, contentHtml, dueDate, priority, tags, creatorId } = req.body;
-    
+    const { projectId, title, contentHtml, dueDate, priority, tags, creatorId, visibility = 'PRIVATE', eventId } = req.body;
+
     if (!projectId || !title || !creatorId) {
       return res.status(400).json({ error: 'Project ID, title, and creator ID are required' });
     }
-    
+
     const task = await prisma.task.create({
       data: {
         projectId,
         title,
         content: contentHtml || title, // Store contentHtml as content, fallback to title
         priority: (priority || 'NEBULA') as Priority,
+        visibility: visibility as any, // Convert to enum (PUBLIC, CONTACTS, PRIVATE)
         status: 'ACTIVE' as TaskStatus,
         creatorId,
+        eventId: eventId || null,
         tags: tags || [],
         dueDate: dueDate ? new Date(dueDate) : null,
         metadata: {
@@ -69,7 +71,7 @@ router.post('/', async (req: Request, res: Response) => {
         project: true
       }
     });
-    
+
     // Transform for backward compatibility
     const transformedTask = {
       ...task,
@@ -81,7 +83,7 @@ router.post('/', async (req: Request, res: Response) => {
       dueDate: task.dueDate,
       project: task.project // Include the populated project object
     };
-    
+
     res.status(201).json(transformedTask);
   } catch (error) {
     console.error('POST /api/tasks error:', error);
@@ -227,22 +229,24 @@ router.get('/:id', async (req: Request, res: Response) => {
 router.put('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { title, contentHtml, priority, tags, dueDate } = req.body;
-    
+    const { title, contentHtml, priority, tags, dueDate, visibility, eventId } = req.body;
+
     const updateData: any = {};
-    
+
     if (title !== undefined) {
       updateData.title = title;
       updateData.content = contentHtml || title;
     }
     if (priority !== undefined) updateData.priority = priority;
-    
+    if (visibility !== undefined) updateData.visibility = visibility; // PUBLIC, CONTACTS, PRIVATE
+    if (eventId !== undefined) updateData.eventId = eventId || null;
+
     // Update metadata
     const existingTask = await prisma.task.findUnique({ where: { id } });
     if (!existingTask) {
       return res.status(404).json({ error: 'Task not found' });
     }
-    
+
     const metadata = existingTask.metadata as any || {};
     if (contentHtml !== undefined) {
       metadata.contentHtml = contentHtml;
@@ -256,9 +260,9 @@ router.put('/:id', async (req: Request, res: Response) => {
       metadata.dueDate = dueDate ? new Date(dueDate).toISOString() : null;
       updateData.dueDate = dueDate ? new Date(dueDate) : null;
     }
-    
+
     updateData.metadata = metadata;
-    
+
     const task = await prisma.task.update({
       where: { id },
       data: updateData,
@@ -266,7 +270,7 @@ router.put('/:id', async (req: Request, res: Response) => {
         project: true
       }
     });
-    
+
     const transformedTask = {
       ...task,
       _id: task.id,
@@ -277,7 +281,7 @@ router.put('/:id', async (req: Request, res: Response) => {
       dueDate: task.dueDate,
       project: task.project // Include the populated project object
     };
-    
+
     res.json(transformedTask);
   } catch (error) {
     console.error('PUT /api/tasks/:id error:', error);
