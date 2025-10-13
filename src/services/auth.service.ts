@@ -405,18 +405,26 @@ export class AuthService {
       if (existingToken) {
         console.log('🔄 Found existing valid refresh token, reusing...');
         // Generate new access token using existing refresh token
+        // For development, use long-lived tokens (90 days)
         tokens = this.generateTokens(user.id, user.email);
 
-        // Update the existing refresh token to extend its life if needed
+        // Update the existing refresh token to extend its life
         await prisma.refreshToken.update({
           where: { id: existingToken.id },
           data: {
             token: tokens.refreshToken,
-            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Extend to 7 days
+            expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days for dev
           },
         });
 
-        console.log('♻️ Reusing existing tokens for seamless cross-platform experience');
+        // Extend access token expiry for development
+        accessTokenStore.set(tokens.accessToken, {
+          userId: user.id,
+          email: user.email,
+          expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) // 90 days
+        });
+
+        console.log('♻️ Reusing existing tokens (extended to 90 days for development)');
       } else {
         console.log('🆕 No valid tokens found, generating fresh tokens...');
 
@@ -431,14 +439,21 @@ export class AuthService {
         // Generate fresh tokens
         tokens = this.generateTokens(user.id, user.email);
 
-        // Store new refresh token in database
+        // Store new refresh token in database with 90-day expiry
         await prisma.refreshToken.create({
           data: {
             id: crypto.randomBytes(16).toString('hex'),
             token: tokens.refreshToken,
             userId: user.id,
-            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+            expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days for dev
           },
+        });
+
+        // Extend access token expiry for development
+        accessTokenStore.set(tokens.accessToken, {
+          userId: user.id,
+          email: user.email,
+          expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) // 90 days
         });
       }
 
