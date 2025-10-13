@@ -1,5 +1,21 @@
 node_modules
+
 # Keep environment variables out of version control
+# CRITICAL: NEVER commit ANY .env files (see global CLAUDE.md for incident history)
+# Incident: October 13, 2025 - .env.localstack was committed with Gmail password
 .env
+.env.*
+.env.local
+.env.development
+.env.test
+.env.production
+.env.localstack
+.env.staging
+*.env
+*.env.local
+
+# Exception: Allow .env.example (template with placeholders only)
+!.env.example
+!.env.*.example
 
 /src/generated/prisma
