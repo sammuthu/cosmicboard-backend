@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/database';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
+import { upsertContentVisibility } from '../services/content-visibility.service';
 
 const router = Router();
 
@@ -120,6 +121,10 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
       }
     });
 
+    // Sync visibility to ContentVisibility table
+    await upsertContentVisibility('PROJECT', project.id, project.visibility, project.userId);
+    console.log(`✅ Created project ${project.id} with visibility ${project.visibility}`);
+
     res.status(201).json({ ...project, _id: project.id });
   } catch (error: any) {
     console.error('POST /api/projects error:', error);
@@ -137,17 +142,40 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
 router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    
-    const project = await prisma.project.findFirst({
-      where: { id, userId: req.user!.id }
+
+    // First try to find the project
+    const project = await prisma.project.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: {
+            tasks: true,
+            references: true,
+            media: true,
+            events: true
+          }
+        }
+      }
     });
-    
+
     if (!project) {
       res.status(404).json({ error: 'Project not found' });
       return;
     }
-    
-    res.json({ ...project, _id: project.id });
+
+    // Check access permissions
+    const isOwner = project.userId === req.user!.id;
+    const isPublic = project.visibility === 'PUBLIC';
+
+    // TODO: Add CONTACTS visibility check when user relationships are implemented
+    // const isContact = project.visibility === 'CONTACTS' && await checkIfContact(req.user!.id, project.userId)
+
+    if (!isOwner && !isPublic) {
+      res.status(403).json({ error: 'You do not have permission to view this project' });
+      return;
+    }
+
+    res.json({ ...project, _id: project.id, isOwner });
   } catch (error) {
     console.error('GET /api/projects/:id error:', error);
     res.status(500).json({ error: 'Failed to fetch project' });
@@ -170,6 +198,12 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
       where: { id, userId: req.user!.id },
       data: updateData
     });
+
+    // Sync visibility to ContentVisibility table if visibility was updated
+    if (visibility !== undefined) {
+      await upsertContentVisibility('PROJECT', project.id, project.visibility, project.userId);
+      console.log(`✅ Synced project ${project.id} visibility to ${project.visibility}`);
+    }
 
     res.json({ ...project, _id: project.id });
   } catch (error: any) {
@@ -275,22 +309,31 @@ router.post('/:id/restore', authenticate, async (req: AuthRequest, res: Response
 router.get('/:projectId/tasks', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { projectId } = req.params;
-    
-    // First verify the project belongs to the user
-    const project = await prisma.project.findFirst({
-      where: { id: projectId, userId: req.user!.id }
+
+    // First verify the project exists and check permissions
+    const project = await prisma.project.findUnique({
+      where: { id: projectId }
     });
-    
+
     if (!project) {
       res.status(404).json({ error: 'Project not found' });
       return;
     }
-    
+
+    // Check access permissions
+    const isOwner = project.userId === req.user!.id;
+    const isPublic = project.visibility === 'PUBLIC';
+
+    if (!isOwner && !isPublic) {
+      res.status(403).json({ error: 'You do not have permission to view this project' });
+      return;
+    }
+
     const tasks = await prisma.task.findMany({
       where: { projectId },
       orderBy: { createdAt: 'desc' }
     });
-    
+
     res.json(tasks);
   } catch (error) {
     console.error('GET /api/projects/:projectId/tasks error:', error);
