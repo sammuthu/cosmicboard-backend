@@ -6,6 +6,7 @@ import multer from 'multer';
 import { randomUUID } from 'crypto';
 import sharp from 'sharp';
 import { prisma } from '../lib/database';
+import { isDevMode, getAllDevAccounts, getDevAccount } from '../config/auth.config';
 
 const router = Router();
 
@@ -444,6 +445,94 @@ router.post('/setup-dev-auth', async (req, res) => {
   } catch (error) {
     console.error('Error setting up development auth:', error);
     res.status(500).json({ error: 'Failed to setup development authentication' });
+  }
+});
+
+// Dev-login endpoint - instant login with pre-configured dev account (no emails)
+router.post('/dev-login', async (req, res) => {
+  try {
+    if (!isDevMode()) {
+      return res.status(403).json({ error: 'Development endpoint not available in production' });
+    }
+
+    const { email } = req.body;
+
+    if (!email) {
+      // Return list of available dev accounts
+      return res.json({
+        accounts: getAllDevAccounts().map(acc => ({
+          email: acc.email,
+          name: acc.name,
+        })),
+      });
+    }
+
+    // Get dev account
+    const devAccount = getDevAccount(email);
+    if (!devAccount) {
+      return res.status(400).json({
+        error: `Unknown dev account: ${email}`,
+        available: getAllDevAccounts().map(acc => acc.email),
+      });
+    }
+
+    // Get or create user in database
+    let user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          id: devAccount.id,
+          email: devAccount.email,
+          name: devAccount.name,
+          username: devAccount.username,
+          emailVerified: new Date(),
+          isActive: true,
+        },
+      });
+      console.log('✅ Created dev user:', email);
+    }
+
+    console.log('🔓 Dev-login for:', email);
+
+    // Return dev token (never expires in dev mode)
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        username: user.username,
+        avatar: user.avatar,
+        bio: user.bio,
+      },
+      tokens: {
+        accessToken: devAccount.token,
+        refreshToken: devAccount.token,
+        expiresIn: 31536000, // 365 days in seconds
+      },
+    });
+  } catch (error) {
+    console.error('Error in dev-login:', error);
+    res.status(500).json({ error: 'Failed to process dev-login' });
+  }
+});
+
+// List dev accounts (only in development)
+router.get('/dev-accounts', async (req, res) => {
+  try {
+    if (!isDevMode()) {
+      return res.status(403).json({ error: 'Development endpoint not available in production' });
+    }
+
+    res.json({
+      accounts: getAllDevAccounts().map(acc => ({
+        email: acc.email,
+        name: acc.name,
+        username: acc.username,
+      })),
+    });
+  } catch (error) {
+    console.error('Error listing dev accounts:', error);
+    res.status(500).json({ error: 'Failed to list dev accounts' });
   }
 });
 

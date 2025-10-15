@@ -1,6 +1,7 @@
 import { PrismaClient, User } from '@prisma/client';
 import crypto from 'crypto';
 import { EmailService } from './email.service';
+import { authConfig, isDevMode, validateDevToken, getDevAccount } from '../config/auth.config';
 
 const prisma = new PrismaClient();
 
@@ -37,14 +38,23 @@ export class AuthService {
   }
 
   static validateAccessToken(token: string): { userId: string; email: string } | null {
+    // In development mode, check if this is a dev token
+    if (isDevMode()) {
+      const devAccount = validateDevToken(token);
+      if (devAccount) {
+        return { userId: devAccount.id, email: devAccount.email };
+      }
+    }
+
+    // Normal token validation
     const tokenData = accessTokenStore.get(token);
     if (!tokenData) return null;
-    
+
     if (tokenData.expiresAt < new Date()) {
       accessTokenStore.delete(token);
       return null;
     }
-    
+
     return { userId: tokenData.userId, email: tokenData.email };
   }
 

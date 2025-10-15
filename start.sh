@@ -136,8 +136,26 @@ else
     # Check if container exists but is stopped
     if docker ps -a | grep -q "cosmicspace-localstack"; then
         print_status "LocalStack container exists but is stopped, starting it..."
-        docker start cosmicspace-localstack
-        print_success "LocalStack container started"
+        if docker start cosmicspace-localstack 2>&1 | grep -q "Error"; then
+            print_error "Failed to start existing container. Removing and recreating..."
+            docker rm -f cosmicspace-localstack > /dev/null 2>&1
+            docker run -d \
+                --name cosmicspace-localstack \
+                -e SERVICES=s3,ses,secretsmanager \
+                -e DEBUG=1 \
+                -e DATA_DIR=/tmp/localstack/data \
+                -e PERSISTENCE=1 \
+                -e AWS_DEFAULT_REGION=us-east-1 \
+                -e HOSTNAME_EXTERNAL=localhost \
+                -v cosmicboard-backend_localstack_data:/var/lib/localstack \
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                -p 4566:4566 \
+                -p 4510-4559:4510-4559 \
+                localstack/localstack:latest
+            print_success "LocalStack container recreated and started"
+        else
+            print_success "LocalStack container started"
+        fi
     else
         print_status "Creating LocalStack container with persistent storage..."
         docker run -d \
